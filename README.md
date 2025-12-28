@@ -149,16 +149,14 @@ python manage.py collectstatic
 ### Настройка PostgreSQL в Railway
 
 1. **Создайте PostgreSQL базу данных** в Railway Dashboard
-2. **Получите параметры подключения**:
-   - Host: `crossover.proxy.rlwy.net`
-   - Port: `42771`
-   - Username: (из настроек базы данных)
-   - Password: (из настроек базы данных)
-   - Database: `postgres` (или ваше имя БД)
+2. **Получите строку подключения** из Railway (Variables → DATABASE_URL):
+   ```
+   postgresql://postgres:пароль@postgres.railway.internal:5432/railway
+   ```
 
 3. **Добавьте переменную окружения** в Railway:
    ```
-   DATABASE_URL=postgresql://username:password@crossover.proxy.rlwy.net:42771/postgres
+   DATABASE_URL=postgresql://postgres:MmuRktkaoQChhBECucfAhpIXqUaYFMxL@postgres.railway.internal:5432/railway
    ```
 
 4. **Railway автоматически пересоберет** приложение с PostgreSQL
