@@ -41,5 +41,5 @@ USER app
 # Открываем порт
 EXPOSE 8000
 
-# Команда запуска
-CMD python manage.py runserver 0.0.0.0:$PORT
+# Команда запуска с явным указанием порта
+CMD sh -c "echo 'Starting Django on port $PORT' && python manage.py runserver 0.0.0.0:$PORT"

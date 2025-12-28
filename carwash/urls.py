@@ -16,4 +16,5 @@ urlpatterns = [
     path("settings", views.SettingsView.as_view(), name="settings"),
     path("analytics", views.AnalyticsView.as_view(), name="analytics"),
     path("help", views.HelpView.as_view(), name="help"),
+    path("health/", views.HealthCheckView.as_view(), name="health_check"),
 ]

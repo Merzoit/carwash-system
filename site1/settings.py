@@ -106,21 +106,35 @@ WSGI_APPLICATION = 'site1.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 # Настройки базы данных из переменной окружения
-DATABASE_URL = os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR}/db.sqlite3')
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-if DATABASE_URL.startswith('sqlite:///'):
+if DATABASE_URL:
+    # Если DATABASE_URL установлена (Railway предоставляет PostgreSQL)
+    import dj_database_url
+    try:
+        DATABASES = {
+            'default': dj_database_url.config(default=DATABASE_URL)
+        }
+        logger.info("Using PostgreSQL database from Railway")
+    except Exception as e:
+        logger.error(f"Error configuring PostgreSQL: {e}")
+        # Fallback to SQLite
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+        logger.info("Fallback to SQLite database")
+else:
+    # Для локальной разработки
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': DATABASE_URL.replace('sqlite:///', ''),
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-else:
-    # Для других баз данных (PostgreSQL, MySQL) используем dj-database-url
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL)
-    }
+    logger.info("Using SQLite database for development")
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -177,6 +191,15 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Railway specific settings
 # Port for Railway deployment
 PORT = int(os.getenv('PORT', 8000))
+
+# Debug logging for Railway
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info(f"Starting Django application on port {PORT}")
+logger.info(f"DEBUG: {DEBUG}")
+logger.info(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+logger.info(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

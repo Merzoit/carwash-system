@@ -2,6 +2,7 @@ from django.views.generic import TemplateView
 from django.views import View
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import JsonResponse
 from shared_algorythms import Management, Math
 from .models import *
 from warehouse.models import Stock
@@ -883,3 +884,15 @@ class WashAddView(View, Management, Math):
 			return redirect('add')
 
 		return render(request, 'wash_demo.html', data)
+
+
+class HealthCheckView(View):
+	"""
+	Health check endpoint для Railway
+	"""
+	def get(self, request):
+		return JsonResponse({
+			'status': 'ok',
+			'timestamp': timezone.now().isoformat(),
+			'service': 'carwash-system'
+		})
