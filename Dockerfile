@@ -38,8 +38,12 @@ RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app
 USER app
 
-# Открываем порт
-EXPOSE 8000
+# Открываем порт (Railway сам присвоит порт через переменную PORT)
+EXPOSE $PORT
+
+# Healthcheck для Railway
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health/ || exit 1
 
 # Команда запуска с gunicorn для продакшена
 CMD sh -c "echo 'Starting Django on port $PORT' && gunicorn site1.wsgi:application --bind 0.0.0.0:$PORT"
