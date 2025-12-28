@@ -30,7 +30,18 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-a6_!=5=2v1)b#e2xv0@=6&r-pm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,*.railway.app,railway.app').split(',')
+
+# CSRF trusted origins for Railway
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://railway.app',
+] + [f'https://{host.strip()}' for host in ALLOWED_HOSTS if host.strip()]
+
+# Security settings for Railway
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = True
 
 
 # Application definition
@@ -162,6 +173,10 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Медиа файлы
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Railway specific settings
+# Port for Railway deployment
+PORT = int(os.getenv('PORT', 8000))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
