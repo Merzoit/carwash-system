@@ -1,0 +1,786 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="statistics-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Статистика смены</h1>
+        <p>Текущая смена: {{ shift }}</p>
+    </div>
+
+    <!-- Основная статистика -->
+    <div class="stats-grid">
+        <!-- Логотип и версия -->
+        <!-- Статистика смены -->
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">Статистика смены</h3>
+                <div class="stats-list">
+                    <div class="stat-item">
+                        <span class="stat-label">Общая выручка:</span>
+                        <span class="stat-value">{{ full_balance }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Выручка мойки:</span>
+                        <span class="stat-value">{{ balance.sale }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Выручка со скидками:</span>
+                        <span class="stat-value">{{ balance.full }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Выручка склада:</span>
+                        <span class="stat-value">{{ stock_consumption_sum }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Типы оплаты -->
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">Типы оплаты</h3>
+                <div class="payment-stats">
+                    {% for pay_type, amount in drop_balance.items %}
+                    <div class="payment-item">
+                        {% if 'аличн' in pay_type|lower %}
+                        <i class="fas fa-money-bill-wave payment-icon"></i>
+                        {% elif 'арт' in pay_type|lower %}
+                        <i class="fas fa-credit-card payment-icon"></i>
+                        {% elif 'нлайн' in pay_type|lower %}
+                        <i class="fas fa-mobile-alt payment-icon"></i>
+                        {% else %}
+                        <i class="fas fa-wallet payment-icon"></i>
+                        {% endif %}
+                        <span class="payment-label">{{ pay_type|title }}:</span>
+                        <span class="payment-value">{{ amount }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if not drop_balance %}
+                    <div class="payment-item">
+                        <span class="payment-label">Нет данных</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Расходы -->
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">Статистика расходов</h3>
+                <div class="stats-list">
+                    <div class="stat-item">
+                        <span class="stat-label">Зарплатные расходы:</span>
+                        <span class="stat-value">{{ consumption_sum }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Бытовые расходы:</span>
+                        <span class="stat-value">{{ other_consumption_sum }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Закрытие смены -->
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">Закрытие смены</h3>
+                <div class="stats-list">
+                    <div class="stat-item">
+                        <span class="stat-label">Выплата администратору:</span>
+                        <span class="stat-value">{{ admin_consumption }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Остаток наличных:</span>
+                        <span class="stat-value">{{ close_cash }}</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Открытие смены -->
+        <div class="stat-card shift-form-card">
+            <div class="card-content">
+                <form method="post" action="{% url 'add_shift' %}" class="shift-form">
+                    {% csrf_token %}
+                    <h3 class="card-title">Открыть смену</h3>
+                    <div class="form-group">
+                        <label for="id_date">Дата смены</label>
+                        {{ shift_form.date }}
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <img src="{% static 'images/plus_icon.svg' %}" alt="Добавить" class="submit-icon">
+                        <span>Открыть смену</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы статистики */
+    .statistics-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 2.5rem;
+        border-radius: var(--radius);
+        box-shadow: 0 12px 40px rgba(37, 99, 235, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: slideInDown 0.8s ease-out;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="stats-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.2)"/></pattern></defs><rect width="100" height="100" fill="url(%23stats-pattern)"/></svg>');
+        opacity: 0.4;
+    }
+
+    .page-header h1 {
+        position: relative;
+        z-index: 1;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-header p {
+        position: relative;
+        z-index: 1;
+        font-size: 1rem;
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .page-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        padding: 2rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg,
+            var(--primary),
+            var(--success),
+            var(--warning),
+            var(--danger),
+            var(--info));
+        border-radius: 20px 20px 0 0;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        border-color: rgba(37, 99, 235, 0.3);
+    }
+
+    .stat-card:nth-child(1)::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(90deg, var(--success), #22c55e); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(90deg, var(--warning), #f59e0b); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(90deg, var(--danger), #ef4444); }
+
+    .logo-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .card-content {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 0.5rem;
+    }
+
+    .logo-image {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 1rem;
+    }
+
+    .version {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .stats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.2rem;
+        background: linear-gradient(135deg, var(--text-primary), var(--primary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+        display: inline-block;
+    }
+
+    .stat-value::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary), transparent);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover .stat-value::after {
+        transform: scaleX(1);
+    }
+
+    .payment-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .payment-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: linear-gradient(135deg, var(--background), rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        animation: slideInLeft 0.6s ease-out;
+    }
+
+    .payment-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(255, 255, 255, 0.1));
+    }
+
+    .payment-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--primary);
+        border-radius: 0 2px 2px 0;
+    }
+
+    .payment-icon {
+        color: var(--primary);
+        font-size: 1.2rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    .payment-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        flex: 1;
+    }
+
+    .payment-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        transition: all 0.2s ease;
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .action-btn:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-icon {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 0.5rem;
+    }
+
+    .action-btn span {
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .shift-form-card {
+        grid-column: 1 / -1;
+    }
+
+    /* Glow эффект */
+    @keyframes glow {
+        0%, 100% {
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
+        }
+        50% {
+            box-shadow: 0 0 25px rgba(37, 99, 235, 0.4);
+        }
+    }
+
+    .shift-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: border-color 0.2s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .submit-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 1rem;
+    }
+
+    .submit-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .submit-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .statistics-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-btn {
+            flex-direction: row;
+            justify-content: flex-start;
+            text-align: left;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 0;
+            margin-right: 1rem;
+        }
+
+        .payment-item {
+            padding: 0.5rem;
+        }
+
+        .stat-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .stat-value {
+            align-self: flex-end;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header {
+            padding: 0.75rem;
+        }
+
+        .stat-card {
+            padding: 0.75rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+        }
+
+        .stat-label,
+        .stat-value,
+        .payment-label,
+        .payment-value {
+            font-size: 0.85rem;
+        }
+
+        .action-btn {
+            padding: 0.75rem;
+        }
+
+        .btn-icon {
+            width: 35px;
+            height: 35px;
+        }
+
+        .submit-btn {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Для планшетов */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .shift-form-card {
+            grid-column: 1 / -1;
+        }
+    }
+
+    /* Анимации */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes countUp {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes glow {
+        0%, 100% {
+            box-shadow: 0 0 5px rgba(37, 99, 235, 0.2);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+        }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+
+    .stat-card {
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .stat-value {
+        animation: countUp 0.6s ease-out;
+    }
+
+    .payment-item {
+        animation: slideInLeft 0.6s ease-out;
+    }
+
+    .payment-item:nth-child(1) { animation-delay: 0.1s; }
+    .payment-item:nth-child(2) { animation-delay: 0.2s; }
+    .payment-item:nth-child(3) { animation-delay: 0.3s; }
+
+    /* Для больших экранов */
+    @media (min-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .shift-form-card {
+            grid-column: span 2;
+        }
+    }
+</style>
+
+<script>
+    // Инициализация страницы статистики
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        document.getElementById('pageTitle').textContent = 'Статистика';
+        document.getElementById('contentTitle').textContent = 'Статистика смены';
+        document.getElementById('contentIcon').className = 'fas fa-chart-bar';
+
+        // Активируем соответствующую ссылку в навигации
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-page') === 'statistics') {
+                link.classList.add('active');
+            }
+        });
+
+        // Анимация счетчиков
+        function animateCounters() {
+            const statValues = document.querySelectorAll('.stat-value');
+            statValues.forEach(value => {
+                const text = value.textContent;
+                const number = parseFloat(text.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+
+                if (number > 0) {
+                    let current = 0;
+                    const increment = number / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= number) {
+                            current = number;
+                            clearInterval(timer);
+                        }
+
+                        // Форматируем число
+                        let formatted;
+                        if (text.includes('₽')) {
+                            formatted = Math.round(current).toLocaleString('ru-RU') + ' ₽';
+                        } else {
+                            formatted = Math.round(current);
+                        }
+
+                        value.textContent = formatted;
+                    }, 30);
+                }
+            });
+        }
+
+        // Запускаем анимацию счетчиков
+        animateCounters();
+
+        // Добавляем обработчики для улучшения UX
+        const actionButtons = document.querySelectorAll('.action-btn');
+        actionButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Добавляем анимацию загрузки
+                this.style.opacity = '0.7';
+                setTimeout(() => {
+                    this.style.opacity = '1';
+                }, 300);
+            });
+        });
+
+        // Добавляем hover эффекты для карточек
+        const statCards = document.querySelectorAll('.stat-card');
+        statCards.forEach((card, index) => {
+            card.addEventListener('mouseenter', function() {
+                this.style.animation = `float 2s ease-in-out infinite, slideInUp 0.8s ease-out`;
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.style.animation = `slideInUp 0.8s ease-out`;
+            });
+        });
+
+        // Эффект для карточек оплаты
+        const paymentItems = document.querySelectorAll('.payment-item');
+        paymentItems.forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.animation = `glow 1.5s ease-in-out infinite, slideInLeft 0.6s ease-out`;
+            });
+
+            item.addEventListener('mouseleave', function() {
+                this.style.animation = `slideInLeft 0.6s ease-out`;
+            });
+        });
+
+        // Улучшаем форму открытия смены
+        const dateInput = document.querySelector('input[type="date"]');
+        if (dateInput) {
+            // Устанавливаем текущую дату по умолчанию
+            const today = new Date().toISOString().split('T')[0];
+            if (!dateInput.value) {
+                dateInput.value = today;
+            }
+
+            // Добавляем валидацию
+            dateInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (selectedDate > today) {
+                    this.setCustomValidity('Нельзя выбрать будущую дату');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

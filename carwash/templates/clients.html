@@ -1,0 +1,966 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="clients-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Управление клиентами</h1>
+        <p>База клиентов автомойки и их статистика</p>
+    </div>
+
+    <!-- Статистика клиентов -->
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-users"></i>
+                    Всего клиентов
+                </h3>
+                <div class="stat-value">{{ total_clients }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card vip">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-star"></i>
+                    VIP клиенты
+                </h3>
+                <div class="stat-value">
+                    {% for stat in clients_stats %}
+                        {% if stat.client.discount >= 10 %}
+                            {{ forloop.counter }}{% if not forloop.last %} + {% endif %}
+                        {% endif %}
+                    {% empty %}
+                        0
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card active">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-car"></i>
+                    Активные клиенты
+                </h3>
+                <div class="stat-value">
+                    {% for stat in clients_stats %}
+                        {% if stat.total_visits > 0 %}
+                            {{ forloop.counter }}{% if not forloop.last %} + {% endif %}
+                        {% endif %}
+                    {% empty %}
+                        0
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card revenue">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Общая выручка
+                </h3>
+                <div class="stat-value">
+                    {% for stat in clients_stats %}
+                        {{ stat.total_spent|add:0 }}{% if not forloop.last %} + {% endif %}
+                    {% empty %}
+                        0
+                    {% endfor %} ₽
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма добавления клиента -->
+    <div class="accordion-container">
+        <div class="accordion-item active">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div class="accordion-title">
+                    <i class="fas fa-user-plus"></i>
+                    <h3>Добавить клиента</h3>
+                </div>
+                <div class="accordion-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content" style="max-height: 2000px;">
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-address-card"></i>
+                        <h3>Новый клиент</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="clientForm" method="post" action="{% url 'clients' %}">
+                            {% csrf_token %}
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="{{ client_form.license_plate.id_for_label }}" class="form-label">
+                                            <i class="fas fa-id-card"></i>
+                                            Государственный номер
+                                        </label>
+                                        {{ client_form.license_plate }}
+                                        <div class="form-hint">Например: А000АА000</div>
+                                        {% if client_form.license_plate.errors %}
+                                            <div class="form-error">{{ client_form.license_plate.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ client_form.name.id_for_label }}" class="form-label">
+                                            <i class="fas fa-user"></i>
+                                            Имя клиента
+                                        </label>
+                                        {{ client_form.name }}
+                                        <div class="form-hint">ФИО клиента</div>
+                                        {% if client_form.name.errors %}
+                                            <div class="form-error">{{ client_form.name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ client_form.phone.id_for_label }}" class="form-label">
+                                            <i class="fas fa-phone"></i>
+                                            Номер телефона
+                                        </label>
+                                        {{ client_form.phone }}
+                                        <div class="form-hint">+7 (999) 123-45-67</div>
+                                        {% if client_form.phone.errors %}
+                                            <div class="form-error">{{ client_form.phone.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ client_form.discount.id_for_label }}" class="form-label">
+                                            <i class="fas fa-percent"></i>
+                                            Скидка (%)
+                                        </label>
+                                        {{ client_form.discount }}
+                                        <div class="form-hint">Процент скидки (0-100)</div>
+                                        {% if client_form.discount.errors %}
+                                            <div class="form-error">{{ client_form.discount.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Кнопки действий -->
+                            <div class="form-actions">
+                                <button type="submit" name="add_client" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Добавить клиента
+                                </button>
+                                <button type="button" onclick="clearClientForm()" class="btn btn-secondary">
+                                    <i class="fas fa-eraser"></i>
+                                    Очистить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список клиентов -->
+    <div class="clients-list-container">
+        <div class="table-header">
+            <h3><i class="fas fa-address-book"></i> Клиенты</h3>
+        </div>
+
+        {% if clients %}
+        <div class="clients-grid">
+            {% for stat in clients_stats %}
+            <div class="client-card {% if stat.client.discount >= 10 %}vip{% elif stat.client.discount >= 5 %}regular{% else %}basic{% endif %}">
+                <div class="client-header">
+                    <div class="client-avatar">
+                        {% if stat.client.discount >= 10 %}
+                            <i class="fas fa-crown"></i>
+                        {% elif stat.client.discount >= 5 %}
+                            <i class="fas fa-star"></i>
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div class="client-info">
+                        <h4>{{ stat.client.name }}</h4>
+                        <div class="client-license">{{ stat.client.license_plate }}</div>
+                        {% if stat.client.discount > 0 %}
+                            <div class="client-discount">Скидка: {{ stat.client.discount }}%</div>
+                        {% endif %}
+                    </div>
+                    <div class="client-actions">
+                        <button class="btn-action edit-btn" onclick="editClient({{ stat.client.id }})" title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action delete-btn" onclick="deleteClient({{ stat.client.id }}, '{{ stat.client.name }}')" title="Удалить">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="client-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Посещений:</span>
+                        <span class="stat-value">{{ stat.total_visits }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Общая сумма:</span>
+                        <span class="stat-value">{{ stat.total_spent|floatformat:2 }} ₽</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Средний чек:</span>
+                        <span class="stat-value">{{ stat.average_bill|floatformat:2 }} ₽</span>
+                    </div>
+                    {% if stat.client.phone %}
+                    <div class="stat-row">
+                        <span class="stat-label">Телефон:</span>
+                        <span class="stat-value">{{ stat.client.phone }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="client-status">
+                    {% if stat.total_visits == 0 %}
+                        <span class="status-badge new">Новый клиент</span>
+                    {% elif stat.total_visits >= 10 %}
+                        <span class="status-badge loyal">Постоянный клиент</span>
+                    {% else %}
+                        <span class="status-badge regular">Активный клиент</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-clients">
+            <i class="fas fa-users"></i>
+            <p>Клиентов пока нет</p>
+            <small>Добавьте первого клиента с помощью формы выше</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы клиентов */
+    .clients-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="clients-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.2)"/></pattern></defs><rect width="100" height="100" fill="url(%23clients-pattern)"/></svg>');
+        opacity: 0.4;
+    }
+
+    .page-header h1 {
+        position: relative;
+        z-index: 1;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-header p {
+        position: relative;
+        z-index: 1;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Статистика */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideInUp 0.8s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .stat-card.total::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+    .stat-card.vip::before { background: linear-gradient(90deg, #ffd700, #ffed4e); }
+    .stat-card.active::before { background: linear-gradient(90deg, var(--success), #22c55e); }
+    .stat-card.revenue::before { background: linear-gradient(90deg, var(--info), #06b6d4); }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .card-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-title i {
+        color: var(--primary);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Аккордеон */
+    .accordion-container {
+        margin-bottom: 2rem;
+    }
+
+    .accordion-item {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-item:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .accordion-header {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-header:hover {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    }
+
+    .accordion-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .accordion-title i {
+        font-size: 1.5rem;
+    }
+
+    .accordion-title h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .accordion-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-icon {
+        transform: rotate(180deg);
+    }
+
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-content {
+        max-height: 2000px;
+    }
+
+    .form-card {
+        padding: 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label i {
+        color: #6366f1;
+        width: 16px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-hint {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-error {
+        color: var(--error);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    /* Список клиентов */
+    .clients-list-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .clients-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .client-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .client-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .client-card.basic::before { background: linear-gradient(90deg, var(--secondary), #64748b); }
+    .client-card.regular::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+    .client-card.vip::before { background: linear-gradient(90deg, #ffd700, #ffed4e); }
+
+    .client-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .client-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .client-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .client-card.vip .client-avatar {
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        color: #000;
+    }
+
+    .client-info {
+        flex: 1;
+    }
+
+    .client-info h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .client-license {
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .client-discount {
+        color: var(--success);
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .client-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .edit-btn {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+    }
+
+    .edit-btn:hover {
+        background: #6366f1;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .delete-btn {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error);
+    }
+
+    .delete-btn:hover {
+        background: var(--error);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .client-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0;
+    }
+
+    .stat-row .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .stat-row .stat-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .client-status {
+        margin-top: 1rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.new {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+    }
+
+    .status-badge.regular {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success);
+    }
+
+    .status-badge.loyal {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .no-clients {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .no-clients i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .no-clients p {
+        font-size: 1.1rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .no-clients small {
+        opacity: 0.7;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .clients-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .clients-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .client-card {
+            padding: 1rem;
+        }
+
+        .client-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .client-actions {
+            justify-content: center;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+
+    /* Анимации */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+
+<script>
+    // Функция переключения аккордеона
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.accordion-icon i');
+
+        const isActive = item.classList.contains('active');
+
+        if (isActive) {
+            item.classList.remove('active');
+            content.style.maxHeight = '0px';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.maxHeight = content.scrollHeight + 'px';
+            item.classList.add('active');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+
+            setTimeout(() => {
+                if (item.classList.contains('active')) {
+                    content.style.maxHeight = 'none';
+                }
+            }, 300);
+        }
+    }
+
+    // Функция редактирования клиента
+    function editClient(clientId) {
+        // Для будущей реализации
+        alert('Функция редактирования будет реализована в следующих обновлениях');
+    }
+
+    // Функция удаления клиента
+    function deleteClient(clientId, clientName) {
+        if (confirm(`Вы уверены, что хотите удалить клиента "${clientName}"?`)) {
+            // Для будущей реализации
+            alert('Функция удаления будет реализована в следующих обновлениях');
+        }
+    }
+
+    // Функция очистки формы клиента
+    function clearClientForm() {
+        const form = document.getElementById('clientForm');
+        if (form) {
+            form.reset();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        const pageTitle = document.getElementById('pageTitle');
+        const contentTitle = document.getElementById('contentTitle');
+        const contentIcon = document.getElementById('contentIcon');
+
+        if (pageTitle) pageTitle.textContent = 'Клиенты';
+        if (contentTitle) contentTitle.textContent = 'Управление клиентами';
+        if (contentIcon) contentIcon.className = 'fas fa-users';
+
+        // Устанавливаем правильную высоту аккордеона после загрузки
+        setTimeout(function() {
+            const accordionItem = document.querySelector('.accordion-item.active');
+            if (accordionItem) {
+                const content = accordionItem.querySelector('.accordion-content');
+                if (content) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            }
+        }, 100);
+
+        // Валидация формы
+        const clientForm = document.getElementById('clientForm');
+        if (clientForm) {
+            clientForm.addEventListener('submit', function(event) {
+                const licensePlateInput = clientForm.querySelector('input[name="license_plate"]');
+                const nameInput = clientForm.querySelector('input[name="name"]');
+                const discountInput = clientForm.querySelector('input[name="discount"]');
+
+                if (!licensePlateInput.value.trim()) {
+                    event.preventDefault();
+                    alert('Введите государственный номер');
+                    licensePlateInput.focus();
+                    return false;
+                }
+
+                if (!nameInput.value.trim()) {
+                    event.preventDefault();
+                    alert('Введите имя клиента');
+                    nameInput.focus();
+                    return false;
+                }
+
+                const discount = parseInt(discountInput.value) || 0;
+                if (discount < 0 || discount > 100) {
+                    event.preventDefault();
+                    alert('Скидка должна быть от 0 до 100%');
+                    discountInput.focus();
+                    return false;
+                }
+
+                // Проверка формата гос номера
+                const licensePlate = licensePlateInput.value.toUpperCase();
+                const licensePattern = /^[А-ЯA-Z0-9]{1,9}$/;
+                if (!licensePattern.test(licensePlate.replace(/\s/g, ''))) {
+                    event.preventDefault();
+                    alert('Неверный формат государственного номера');
+                    licensePlateInput.focus();
+                    return false;
+                }
+            });
+        }
+
+        // Автоформатирование гос номера
+        const licensePlateInput = document.querySelector('input[name="license_plate"]');
+        if (licensePlateInput) {
+            licensePlateInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        }
+    });
+</script>
+{% endblock %}

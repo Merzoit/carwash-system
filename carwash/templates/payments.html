@@ -1,0 +1,1484 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="payments-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Выплаты сотрудникам</h1>
+        <p>Управление заработной платой и выплатами</p>
+        {% if current_shift %}
+            <div class="shift-info">
+                <span class="shift-label">Текущая смена:</span>
+                <span class="shift-date">{{ current_shift.date|date:"d.m.Y" }}</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Общая статистика выплат -->
+    <div class="stats-grid">
+        <div class="stat-card earned">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-coins"></i>
+                    Заработано сегодня
+                </h3>
+                <div class="stat-value">{{ total_earned|floatformat:2 }} ₽</div>
+            </div>
+        </div>
+
+        <div class="stat-card paid">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    Выплачено сегодня
+                </h3>
+                <div class="stat-value">{{ total_paid|floatformat:2 }} ₽</div>
+            </div>
+        </div>
+
+        <div class="stat-card remaining {% if total_remaining > 0 %}warning{% else %}success{% endif %}">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-balance-scale"></i>
+                    Остаток к выплате
+                </h3>
+                <div class="stat-value">{{ total_remaining|floatformat:2 }} ₽</div>
+            </div>
+        </div>
+
+        <div class="stat-card progress">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Прогресс выплат
+                </h3>
+                <div class="progress-circle">
+                    <div class="progress-ring">
+                        <svg width="80" height="80">
+                            <circle class="progress-ring-circle-bg" stroke="#e2e8f0" stroke-width="6" fill="transparent" r="35" cx="40" cy="40"/>
+                            <circle class="progress-ring-circle" stroke="{% if total_earned > 0 %}{% if total_remaining == 0 %}#10b981{% else %}#f59e0b{% endif %}{% else %}#e2e8f0{% endif %}" stroke-width="6" fill="transparent" r="35" cx="40" cy="40"
+                                style="stroke-dasharray: {{ progress_stroke }} 219.91; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: 40px 40px;"/>
+                        </svg>
+                        <div class="progress-text">
+                            {{ progress_percentage }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card expenses">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-shopping-cart"></i>
+                    Расходы на материалы
+                </h3>
+                <div class="stat-value">{{ total_other_consumption }} ₽</div>
+                <div class="stat-subtitle">
+                    {% if other_consumptions %}
+                        {{ other_consumptions|length }} позиций
+                    {% else %}
+                        Нет расходов
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма добавления выплаты -->
+    <div class="accordion-container">
+        <div class="accordion-item active">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div class="accordion-title">
+                    <i class="fas fa-plus-circle"></i>
+                    <h3>Добавить выплату</h3>
+                </div>
+                <div class="accordion-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content" style="max-height: 2000px;">
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <h3>Новая выплата</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="paymentForm" method="post" action="{% url 'payments' %}">
+                            {% csrf_token %}
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="{{ consumption_form.washman.id_for_label }}" class="form-label">
+                                            <i class="fas fa-user"></i>
+                                            Сотрудник
+                                        </label>
+                                        {{ consumption_form.washman }}
+                                        <div class="form-hint">Выберите сотрудника для выплаты</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ consumption_form.money.id_for_label }}" class="form-label">
+                                            <i class="fas fa-ruble-sign"></i>
+                                            Сумма выплаты
+                                        </label>
+                                        {{ consumption_form.money }}
+                                        <div class="form-hint">Введите сумму выплаты в рублях</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Кнопки действий -->
+                            <div class="form-actions">
+                                <button type="submit" name="add_payment" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Добавить выплату
+                                </button>
+                                <button type="button" onclick="clearForm()" class="btn btn-secondary">
+                                    <i class="fas fa-eraser"></i>
+                                    Очистить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Аккордеон с формой добавления расходников -->
+        <div class="accordion-container">
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-title">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>Добавить расход на материалы</h3>
+                    </div>
+                    <div class="accordion-icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div class="form-card">
+                        <div class="card-header">
+                            <i class="fas fa-receipt"></i>
+                            <h3>Новый расход</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="otherConsumptionForm" method="post" action="{% url 'payments' %}">
+                                {% csrf_token %}
+
+                                <div class="form-section">
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="{{ other_consumption_form.description.id_for_label }}" class="form-label">
+                                                <i class="fas fa-tag"></i>
+                                                Наименование расхода
+                                            </label>
+                                            {{ other_consumption_form.description }}
+                                            <div class="form-hint">Например: Интернет, Мусорные пакеты, Химия и т.д.</div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="{{ other_consumption_form.money.id_for_label }}" class="form-label">
+                                                <i class="fas fa-ruble-sign"></i>
+                                                Сумма расхода
+                                            </label>
+                                            {{ other_consumption_form.money }}
+                                            <div class="form-hint">Введите сумму расхода в рублях</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Кнопки действий -->
+                                <div class="form-actions">
+                                    <button type="submit" name="add_other_consumption" class="btn btn-warning">
+                                        <i class="fas fa-plus"></i>
+                                        Добавить расход
+                                    </button>
+                                    <button type="button" onclick="clearOtherForm()" class="btn btn-secondary">
+                                        <i class="fas fa-eraser"></i>
+                                        Очистить
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список сотрудников и их выплаты -->
+    <div class="payments-list-container">
+        <div class="table-header">
+            <h3><i class="fas fa-users"></i> Выплаты сотрудникам</h3>
+        </div>
+
+        {% if washmen_payments %}
+        <div class="payments-grid">
+            {% for payment in washmen_payments %}
+            <div class="payment-card {% if payment.remaining > 0 %}has-remaining{% else %}paid-full{% endif %}">
+                <div class="payment-header">
+                    <div class="washman-info">
+                        <div class="washman-avatar">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="washman-details">
+                            <h4>{{ payment.washman.name }}</h4>
+                            <div class="washman-balance">
+                                <span class="balance-label">Баланс:</span>
+                                <span class="balance-value {{ payment.washman.balance|default:0|stringformat:'s'|slice:'0:1' }}">{{ payment.washman.balance|floatformat:2 }} ₽</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-actions">
+                        <button class="btn-action pay-btn" onclick="quickPay({{ payment.washman.id }}, {{ payment.remaining }})" {% if payment.remaining <= 0 %}disabled{% endif %} title="Выплатить остаток">
+                            <i class="fas fa-credit-card"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="payment-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Заработано сегодня:</span>
+                        <span class="stat-value earned">{{ payment.shift_earnings|floatformat:2 }} ₽</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Уже выплачено:</span>
+                        <span class="stat-value paid">{{ payment.shift_payments|floatformat:2 }} ₽</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Остаток к выплате:</span>
+                        <span class="stat-value {{ payment.remaining|default:0|stringformat:'s'|slice:'0:1' }}">{{ payment.remaining|floatformat:2 }} ₽</span>
+                    </div>
+                </div>
+
+                <div class="payment-progress">
+                    <div class="progress-label">
+                        <span>Прогресс выплат</span>
+                        <span>{{ payment.shift_payments|floatformat:2 }} / {{ payment.shift_earnings|floatformat:2 }} ₽</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ payment.payment_percentage }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-payments">
+            <i class="fas fa-users"></i>
+            <p>Нет активных сотрудников</p>
+            <small>Добавьте сотрудников в разделе "Персонал"</small>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Расходники текущей смены -->
+    <div class="expenses-list-container">
+        <div class="table-header">
+            <h3><i class="fas fa-shopping-cart"></i> Расходы на материалы</h3>
+            <div class="table-stats">
+                <span class="stat-item">
+                    <i class="fas fa-calculator"></i>
+                    Всего: {{ total_other_consumption }} ₽
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-list"></i>
+                    Позиций: {{ other_consumptions|length }}
+                </span>
+            </div>
+        </div>
+
+        {% if other_consumptions %}
+        <div class="expenses-grid">
+            {% for expense in other_consumptions %}
+            <div class="expense-card">
+                <div class="expense-header">
+                    <div class="expense-icon">
+                        <i class="fas fa-{% if 'интернет' in expense.description|lower %}wifi{% elif 'мусор' in expense.description|lower %}trash{% elif 'хим' in expense.description|lower %}flask{% elif 'электр' in expense.description|lower %}bolt{% else %}shopping-bag{% endif %}"></i>
+                    </div>
+                    <div class="expense-info">
+                        <h4>{{ expense.description }}</h4>
+                        <div class="expense-time">{{ expense.id|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    <div class="expense-amount">
+                        <span class="amount">{{ expense.money }} ₽</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Статистика по категориям -->
+        {% if other_consumption_stats %}
+        <div class="expense-stats">
+            <h4><i class="fas fa-chart-bar"></i> Статистика расходов</h4>
+            <div class="stats-breakdown">
+                {% for stat in other_consumption_stats %}
+                <div class="stat-breakdown-item">
+                    <span class="stat-category">{{ stat.description }}</span>
+                    <span class="stat-count">{{ stat.count }} шт.</span>
+                    <span class="stat-sum">{{ stat.total }} ₽</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="no-expenses">
+            <i class="fas fa-shopping-cart"></i>
+            <p>Расходов на материалы пока нет</p>
+            <small>Добавьте расход с помощью формы выше</small>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Последние выплаты -->
+    {% if recent_payments %}
+    <div class="recent-payments-container">
+        <div class="table-header">
+            <h3><i class="fas fa-history"></i> Последние выплаты</h3>
+        </div>
+
+        <div class="recent-payments-list">
+            {% for payment in recent_payments %}
+            <div class="recent-payment-item">
+                <div class="payment-info">
+                    <div class="payment-employee">
+                        <i class="fas fa-user"></i>
+                        <span>{{ payment.washman.name }}</span>
+                    </div>
+                    <div class="payment-amount">
+                        <span class="amount">{{ payment.money|floatformat:2 }} ₽</span>
+                        <span class="date">{{ payment.id|date:"H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Стили для страницы выплат */
+    .payments-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="payments-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.2)"/></pattern></defs><rect width="100" height="100" fill="url(%23payments-pattern)"/></svg>');
+        opacity: 0.4;
+    }
+
+    .page-header h1 {
+        position: relative;
+        z-index: 1;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-header p {
+        position: relative;
+        z-index: 1;
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+    }
+
+    .shift-info {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+
+    .shift-label {
+        font-weight: 500;
+        opacity: 0.9;
+    }
+
+    .shift-date {
+        font-weight: 600;
+        color: #ffd700;
+    }
+
+    /* Статистика */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideInUp 0.8s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .stat-card.earned::before { background: linear-gradient(90deg, var(--success), #22c55e); }
+    .stat-card.paid::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+    .stat-card.remaining::before { background: linear-gradient(90deg, var(--warning), #f59e0b); }
+    .stat-card.progress::before { background: linear-gradient(90deg, var(--info), #06b6d4); }
+    .stat-card.expenses::before { background: linear-gradient(90deg, var(--warning), #f59e0b); }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .card-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-title i {
+        color: var(--primary);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card.remaining .stat-value {
+        color: var(--warning);
+    }
+
+    .stat-card.remaining.success .stat-value {
+        color: var(--success);
+    }
+
+    /* Прогресс круг */
+    .progress-circle {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1rem;
+    }
+
+    .progress-ring {
+        position: relative;
+    }
+
+    .progress-ring-circle {
+        transition: stroke-dasharray 0.8s ease;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* Аккордеон */
+    .accordion-container {
+        margin-bottom: 2rem;
+    }
+
+    .accordion-item {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-item:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .accordion-header {
+        background: linear-gradient(135deg, var(--success), #22c55e);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-header:hover {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+    }
+
+    .accordion-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .accordion-title i {
+        font-size: 1.5rem;
+    }
+
+    .accordion-title h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .accordion-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-icon {
+        transform: rotate(180deg);
+    }
+
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-content {
+        max-height: 2000px;
+    }
+
+    .form-card {
+        padding: 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--success), #22c55e);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label i {
+        color: var(--success);
+        width: 16px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--success);
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    }
+
+    .form-hint {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--success), #22c55e);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, var(--warning), #f59e0b);
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    /* Список выплат */
+    .payments-list-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, var(--success), #22c55e);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .payments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .payment-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .payment-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .payment-card.has-remaining::before {
+        background: linear-gradient(90deg, var(--warning), #f59e0b);
+    }
+
+    .payment-card.paid-full::before {
+        background: linear-gradient(90deg, var(--success), #22c55e);
+    }
+
+    .payment-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .payment-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .washman-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .washman-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--success), #22c55e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .washman-details h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .washman-balance {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .balance-label {
+        color: var(--text-secondary);
+    }
+
+    .balance-value {
+        font-weight: 600;
+    }
+
+    .balance-value.positive {
+        color: var(--success);
+    }
+
+    .balance-value.negative {
+        color: var(--error);
+    }
+
+    .payment-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .pay-btn {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success);
+    }
+
+    .pay-btn:hover:not(:disabled) {
+        background: var(--success);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .pay-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .payment-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0;
+    }
+
+    .stat-row .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .stat-row .stat-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .stat-row .stat-value.earned {
+        color: var(--success);
+    }
+
+    .stat-row .stat-value.paid {
+        color: var(--primary);
+    }
+
+    .stat-row .stat-value.positive {
+        color: var(--success);
+    }
+
+    .stat-row .stat-value.negative {
+        color: var(--error);
+    }
+
+    .payment-progress {
+        margin-top: 1rem;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .progress-bar {
+        height: 6px;
+        background: var(--background);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--success), #22c55e);
+        border-radius: 3px;
+        transition: width 0.8s ease;
+    }
+
+    .no-payments {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .no-payments i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .no-payments p {
+        font-size: 1.1rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .no-payments small {
+        opacity: 0.7;
+    }
+
+    /* Последние выплаты */
+    .recent-payments-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .recent-payments-list {
+        padding: 1rem;
+    }
+
+    .recent-payment-item {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: background-color 0.2s ease;
+    }
+
+    .recent-payment-item:hover {
+        background: rgba(37, 99, 235, 0.02);
+    }
+
+    .recent-payment-item:last-child {
+        border-bottom: none;
+    }
+
+    .payment-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .payment-employee {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .payment-employee i {
+        color: var(--primary);
+    }
+
+    .payment-amount {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+    }
+
+    .amount {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--success);
+    }
+
+    .date {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .payments-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .payments-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .payment-card {
+            padding: 1rem;
+        }
+
+        .payment-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .payment-actions {
+            justify-content: center;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+
+    /* Стили для секции расходов */
+    .expenses-list-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .expenses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+
+    .expense-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .expense-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border-color: var(--warning);
+    }
+
+    .expense-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--warning), #f59e0b);
+        border-radius: 12px 12px 0 0;
+    }
+
+    .expense-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .expense-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--warning), #f59e0b);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .expense-info {
+        flex: 1;
+    }
+
+    .expense-info h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .expense-time {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .expense-amount {
+        text-align: right;
+    }
+
+    .expense-amount .amount {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--warning);
+    }
+
+    /* Статистика расходов */
+    .expense-stats {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border);
+        background: rgba(245, 158, 11, 0.05);
+    }
+
+    .expense-stats h4 {
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stats-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stat-breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: var(--background);
+        border-radius: 8px;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .stat-category {
+        font-weight: 500;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    .stat-count {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-right: 1rem;
+    }
+
+    .stat-sum {
+        font-weight: 600;
+        color: var(--warning);
+    }
+
+    .no-expenses {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .no-expenses i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .no-expenses p {
+        font-size: 1.1rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .no-expenses small {
+        opacity: 0.7;
+    }
+
+    /* Адаптивность для расходов */
+    @media (max-width: 768px) {
+        .expenses-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .expense-card {
+            padding: 0.75rem;
+        }
+
+        .expense-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .stats-breakdown {
+            gap: 0.25rem;
+        }
+    }
+
+    /* Анимации */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+
+<script>
+    // Функция переключения аккордеона
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.accordion-icon i');
+
+        const isActive = item.classList.contains('active');
+
+        if (isActive) {
+            item.classList.remove('active');
+            content.style.maxHeight = '0px';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.maxHeight = content.scrollHeight + 'px';
+            item.classList.add('active');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+
+            setTimeout(() => {
+                if (item.classList.contains('active')) {
+                    content.style.maxHeight = 'none';
+                }
+            }, 300);
+        }
+    }
+
+    // Функция быстрой выплаты
+    function quickPay(washmanId, amount) {
+        if (amount <= 0) {
+            alert('Нет суммы для выплаты');
+            return;
+        }
+
+        if (confirm(`Выплатить ${amount.toFixed(2)} ₽ этому сотруднику?`)) {
+            // Создаем форму для отправки
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "payments" %}';
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.appendChild(csrfToken.cloneNode(true));
+            }
+
+            const washmanSelect = document.createElement('select');
+            washmanSelect.name = 'washman';
+            washmanSelect.style.display = 'none';
+
+            const option = document.createElement('option');
+            option.value = washmanId;
+            option.selected = true;
+            washmanSelect.appendChild(option);
+            form.appendChild(washmanSelect);
+
+            const moneyInput = document.createElement('input');
+            moneyInput.type = 'number';
+            moneyInput.name = 'money';
+            moneyInput.value = amount;
+            moneyInput.style.display = 'none';
+            form.appendChild(moneyInput);
+
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'add_payment';
+            actionInput.value = '1';
+            form.appendChild(actionInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Функция очистки формы выплат
+    function clearForm() {
+        const form = document.getElementById('paymentForm');
+        if (form) {
+            form.reset();
+        }
+    }
+
+    // Функция очистки формы расходов
+    function clearOtherForm() {
+        const form = document.getElementById('otherConsumptionForm');
+        if (form) {
+            form.reset();
+        }
+    }
+
+    // Функция очистки формы выплат
+    function clearPaymentForm() {
+        const form = document.getElementById('paymentForm');
+        if (form) {
+            form.reset();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        const pageTitle = document.getElementById('pageTitle');
+        const contentTitle = document.getElementById('contentTitle');
+        const contentIcon = document.getElementById('contentIcon');
+
+        if (pageTitle) pageTitle.textContent = 'Выплаты';
+        if (contentTitle) contentTitle.textContent = 'Управление выплатами';
+        if (contentIcon) contentIcon.className = 'fas fa-hand-holding-usd';
+
+        // Устанавливаем правильную высоту аккордеона после загрузки
+        setTimeout(function() {
+            const accordionItem = document.querySelector('.accordion-item.active');
+            if (accordionItem) {
+                const content = accordionItem.querySelector('.accordion-content');
+                if (content) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            }
+        }, 100);
+
+        // Валидация формы выплат
+        const paymentForm = document.getElementById('paymentForm');
+        if (paymentForm) {
+            paymentForm.addEventListener('submit', function(event) {
+                const washmanSelect = document.querySelector('select[name="washman"]');
+                const moneyInput = document.querySelector('input[name="money"]');
+
+                if (!washmanSelect.value) {
+                    event.preventDefault();
+                    alert('Выберите сотрудника');
+                    washmanSelect.focus();
+                    return false;
+                }
+
+                const amount = parseFloat(moneyInput.value);
+                if (isNaN(amount) || amount <= 0) {
+                    event.preventDefault();
+                    alert('Введите корректную сумму выплаты (больше 0)');
+                    moneyInput.focus();
+                    return false;
+                }
+
+                // Показываем подтверждение для больших сумм
+                if (amount > 10000) {
+                    if (!confirm(`Вы уверены, что хотите выплатить ${amount} ₽? Это большая сумма.`)) {
+                        event.preventDefault();
+                        return false;
+                    }
+                }
+            });
+        }
+
+        // Валидация формы расходов
+        const otherConsumptionForm = document.getElementById('otherConsumptionForm');
+        if (otherConsumptionForm) {
+            otherConsumptionForm.addEventListener('submit', function(event) {
+                const descriptionInput = otherConsumptionForm.querySelector('input[name="description"]');
+                const moneyInput = otherConsumptionForm.querySelector('input[name="money"]');
+
+                if (!descriptionInput.value.trim()) {
+                    event.preventDefault();
+                    alert('Введите описание расхода');
+                    descriptionInput.focus();
+                    return false;
+                }
+
+                const amount = parseFloat(moneyInput.value);
+                if (isNaN(amount) || amount <= 0) {
+                    event.preventDefault();
+                    alert('Введите корректную сумму расхода (больше 0)');
+                    moneyInput.focus();
+                    return false;
+                }
+
+                // Показываем подтверждение для больших сумм
+                if (amount > 5000) {
+                    if (!confirm(`Вы уверены, что хотите добавить расход ${amount} ₽ на "${descriptionInput.value}"? Это большая сумма.`)) {
+                        event.preventDefault();
+                        return false;
+                    }
+                }
+            });
+        }
+
+        // Анимация прогресса круга
+        const progressCircles = document.querySelectorAll('.progress-ring-circle');
+        progressCircles.forEach(circle => {
+            const length = circle.getTotalLength();
+            circle.style.strokeDasharray = length;
+            circle.style.strokeDashoffset = length;
+
+            // Анимируем после небольшой задержки
+            setTimeout(() => {
+                const progress = circle.style.strokeDasharray.split(' ')[0];
+                circle.style.strokeDashoffset = length - progress;
+            }, 500);
+        });
+    });
+</script>
+{% endblock %}

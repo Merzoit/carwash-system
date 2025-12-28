@@ -1,0 +1,20 @@
+.container {
+    width: 80%;
+    margin: auto;
+    text-align: center;
+}
+
+.card {
+    margin-bottom: 20px;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767px) {
+    .container {
+        width: 100%;
+    }
+}

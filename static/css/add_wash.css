@@ -1,0 +1,30 @@
+.container {
+  width: 80%;
+  margin: auto;
+  text-align: center;
+}
+
+.form-section {
+  margin-bottom: 20px;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+}
+
+.btn {
+  margin: 5px;
+}
+
+.stock-container {
+    max-height: 300px; /* Фиксированная высота блока */
+    overflow-y: auto; /* Появление полосы прокрутки при переполнении */
+    border: 1px solid #ccc; /* Добавляем рамку для лучшего визуального отображения */
+    padding: 10px; /* Добавляем небольшой отступ внутри блока */
+}
+
+.table-container {
+  height: 250px;
+  overflow-y: auto;
+}

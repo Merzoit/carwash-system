@@ -1,0 +1,937 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="personnel-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Управление персоналом</h1>
+        <p>Сотрудники автомойки и их статистика</p>
+    </div>
+
+    <!-- Статистика персонала -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-users"></i>
+                    Всего сотрудников
+                </h3>
+                <div class="stat-value">{{ total_washmen }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-user-check"></i>
+                    Активных
+                </h3>
+                <div class="stat-value">{{ active_washmen }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-user-times"></i>
+                    Неактивных
+                </h3>
+                <div class="stat-value">{{ inactive_washmen }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-content">
+                <h3 class="card-title">
+                    <i class="fas fa-car-wash"></i>
+                    Мойки сегодня
+                </h3>
+                <div class="stat-value">
+                    {% for stat in washmen_stats %}
+                        {% if stat.current_shift_washes > 0 %}
+                            {{ stat.current_shift_washes }}{% if not forloop.last %} + {% endif %}
+                        {% endif %}
+                    {% empty %}
+                        0
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Аккордеон с формой добавления сотрудника -->
+    <div class="accordion-container">
+        <div class="accordion-item active">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div class="accordion-title">
+                    <i class="fas fa-user-plus"></i>
+                    <h3>Добавить сотрудника</h3>
+                </div>
+                <div class="accordion-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content" style="max-height: 2000px;">
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-user-tie"></i>
+                        <h3>Новый сотрудник</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="washmanForm" method="post" action="{% url 'personnel' %}">
+                            {% csrf_token %}
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="{{ washman_form.name.id_for_label }}" class="form-label">
+                                            <i class="fas fa-user"></i>
+                                            Имя сотрудника
+                                        </label>
+                                        {{ washman_form.name }}
+                                        <div class="form-hint">Введите полное имя сотрудника</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ washman_form.balance.id_for_label }}" class="form-label">
+                                            <i class="fas fa-ruble-sign"></i>
+                                            Баланс
+                                        </label>
+                                        {{ washman_form.balance }}
+                                        <div class="form-hint">Текущий баланс сотрудника</div>
+                                    </div>
+
+                                    <div class="form-group checkbox-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-toggle-on"></i>
+                                            Статус
+                                        </label>
+                                        <div class="checkbox-wrapper">
+                                            {{ washman_form.is_active }}
+                                            <label for="{{ washman_form.is_active.id_for_label }}" class="checkbox-label">
+                                                Активный сотрудник
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Кнопки действий -->
+                            <div class="form-actions">
+                                <button type="submit" name="add_washman" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Добавить сотрудника
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список сотрудников -->
+    <div class="personnel-list-container">
+        <div class="table-header">
+            <h3><i class="fas fa-users"></i> Сотрудники</h3>
+        </div>
+
+        {% if washmen %}
+        <div class="personnel-grid">
+            {% for stat in washmen_stats %}
+            <div class="personnel-card {% if not stat.washman.is_active %}inactive{% endif %}">
+                <div class="personnel-header">
+                    <div class="personnel-avatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="personnel-info">
+                        <h4>{{ stat.washman.name }}</h4>
+                        <div class="personnel-status">
+                            {% if stat.washman.is_active %}
+                                <span class="status-badge active">
+                                    <i class="fas fa-circle"></i>
+                                    Активен
+                                </span>
+                            {% else %}
+                                <span class="status-badge inactive">
+                                    <i class="fas fa-circle"></i>
+                                    Неактивен
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="personnel-actions">
+                        <button class="btn-action edit-btn" onclick="editWashman({{ stat.washman.id }})" title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        {% if stat.washman.is_active %}
+                            <button class="btn-action deactivate-btn" onclick="toggleWashmanStatus({{ stat.washman.id }}, false)" title="Деактивировать">
+                                <i class="fas fa-user-times"></i>
+                            </button>
+                        {% else %}
+                            <button class="btn-action activate-btn" onclick="toggleWashmanStatus({{ stat.washman.id }}, true)" title="Активировать">
+                                <i class="fas fa-user-check"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="personnel-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Баланс:</span>
+                        <span class="stat-value">{{ stat.washman.balance|floatformat:2 }} ₽</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Всего моек:</span>
+                        <span class="stat-value">{{ stat.total_washes }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Заработано всего:</span>
+                        <span class="stat-value">{{ stat.total_earnings|floatformat:2 }} ₽</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Моек сегодня:</span>
+                        <span class="stat-value highlight">{{ stat.current_shift_washes }}</span>
+                    </div>
+                </div>
+
+                <div class="personnel-progress">
+                    <div class="progress-label">
+                        <span>Активность</span>
+                        <span>{{ stat.total_washes }} моек</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {% if washmen_stats|length > 0 %}{% widthratio stat.total_washes washmen_stats|length|add:1 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-personnel">
+            <i class="fas fa-users"></i>
+            <p>Пока нет сотрудников</p>
+            <small>Добавьте первого сотрудника с помощью формы выше</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы персонала */
+    .personnel-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="personnel-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.2)"/></pattern></defs><rect width="100" height="100" fill="url(%23personnel-pattern)"/></svg>');
+        opacity: 0.4;
+    }
+
+    .page-header h1 {
+        position: relative;
+        z-index: 1;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-header p {
+        position: relative;
+        z-index: 1;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Статистика */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .card-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-title i {
+        color: var(--primary);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Аккордеон */
+    .accordion-container {
+        margin-bottom: 2rem;
+    }
+
+    .accordion-item {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-item:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .accordion-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-header:hover {
+        background: linear-gradient(135deg, #64748b, #475569);
+    }
+
+    .accordion-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .accordion-title i {
+        font-size: 1.5rem;
+    }
+
+    .accordion-title h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .accordion-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-icon {
+        transform: rotate(180deg);
+    }
+
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-content {
+        max-height: 2000px;
+    }
+
+    .form-card {
+        padding: 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .checkbox-group {
+        justify-content: flex-start;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .checkbox-label {
+        font-weight: 500;
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-hint {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Список персонала */
+    .personnel-list-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .personnel-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .personnel-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .personnel-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-light);
+    }
+
+    .personnel-card.inactive {
+        opacity: 0.7;
+        border-color: var(--text-secondary);
+    }
+
+    .personnel-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--success), var(--warning));
+        border-radius: 16px 16px 0 0;
+    }
+
+    .personnel-card.inactive::before {
+        background: linear-gradient(90deg, var(--text-secondary), #94a3b8);
+    }
+
+    .personnel-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .personnel-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .personnel-info {
+        flex: 1;
+    }
+
+    .personnel-info h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .personnel-status {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.active {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success);
+    }
+
+    .status-badge.inactive {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error);
+    }
+
+    .status-badge i {
+        font-size: 0.5rem;
+    }
+
+    .personnel-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .edit-btn {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary);
+    }
+
+    .edit-btn:hover {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .deactivate-btn {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error);
+    }
+
+    .deactivate-btn:hover {
+        background: var(--error);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .activate-btn {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success);
+    }
+
+    .activate-btn:hover {
+        background: var(--success);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .personnel-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0;
+    }
+
+    .stat-row .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .stat-row .stat-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .stat-row .stat-value.highlight {
+        color: var(--primary);
+        font-size: 1.1rem;
+    }
+
+    .personnel-progress {
+        margin-top: 1rem;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .progress-bar {
+        height: 6px;
+        background: var(--background);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+        border-radius: 3px;
+        transition: width 0.8s ease;
+    }
+
+    .no-personnel {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .no-personnel i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .no-personnel p {
+        font-size: 1.1rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .no-personnel small {
+        opacity: 0.7;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .personnel-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .personnel-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .personnel-card {
+            padding: 1rem;
+        }
+
+        .personnel-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .personnel-actions {
+            justify-content: center;
+        }
+    }
+
+    /* Анимации */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+
+<script>
+    // Функция переключения аккордеона
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.accordion-icon i');
+
+        const isActive = item.classList.contains('active');
+
+        if (isActive) {
+            item.classList.remove('active');
+            content.style.maxHeight = '0px';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.maxHeight = content.scrollHeight + 'px';
+            item.classList.add('active');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+
+            setTimeout(() => {
+                if (item.classList.contains('active')) {
+                    content.style.maxHeight = 'none';
+                }
+            }, 300);
+        }
+    }
+
+    // Функция редактирования сотрудника
+    function editWashman(washmanId) {
+        // Для будущей реализации
+        alert('Функция редактирования будет реализована в следующих обновлениях');
+    }
+
+    // Функция изменения статуса сотрудника
+    function toggleWashmanStatus(washmanId, activate) {
+        if (confirm(activate ? 'Активировать сотрудника?' : 'Деактивировать сотрудника?')) {
+            // Создаем форму для отправки
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "personnel" %}';
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.appendChild(csrfToken.cloneNode(true));
+            }
+
+            const washmanIdInput = document.createElement('input');
+            washmanIdInput.type = 'hidden';
+            washmanIdInput.name = 'washman_id';
+            washmanIdInput.value = washmanId;
+            form.appendChild(washmanIdInput);
+
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'toggle_status';
+            actionInput.value = '1';
+            form.appendChild(actionInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        const pageTitle = document.getElementById('pageTitle');
+        const contentTitle = document.getElementById('contentTitle');
+        const contentIcon = document.getElementById('contentIcon');
+
+        if (pageTitle) pageTitle.textContent = 'Управление персоналом';
+        if (contentTitle) contentTitle.textContent = 'Персонал';
+        if (contentIcon) contentIcon.className = 'fas fa-users';
+
+        // Устанавливаем правильную высоту аккордеона после загрузки
+        setTimeout(function() {
+            const accordionItem = document.querySelector('.accordion-item.active');
+            if (accordionItem) {
+                const content = accordionItem.querySelector('.accordion-content');
+                if (content) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            }
+        }, 100);
+
+        // Валидация формы
+        const washmanForm = document.getElementById('washmanForm');
+        if (washmanForm) {
+            washmanForm.addEventListener('submit', function(event) {
+                const nameInput = document.querySelector('input[name="name"]');
+                const balanceInput = document.querySelector('input[name="balance"]');
+
+                if (!nameInput.value.trim()) {
+                    event.preventDefault();
+                    alert('Введите имя сотрудника');
+                    nameInput.focus();
+                    return false;
+                }
+
+                const balance = parseFloat(balanceInput.value);
+                if (isNaN(balance) || balance < 0) {
+                    event.preventDefault();
+                    alert('Введите корректный баланс (положительное число)');
+                    balanceInput.focus();
+                    return false;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

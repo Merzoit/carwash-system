@@ -1,0 +1,74 @@
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.custom-accordion .accordion-button {
+    border-radius: 12px !important;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.custom-accordion .accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.custom-accordion .accordion-item {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.custom-accordion .accordion-body {
+    background-color: #fff;
+}
+
+.nav-pills .nav-link {
+    border-radius: 0;
+    transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link.active {
+    background-color: transparent;
+    color: #0d6efd;
+    border-bottom: 3px solid #0d6efd;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.alert-container .alert {
+    border-radius: 10px;
+    border: none;
+    min-width: 300px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+    
+    .custom-accordion .accordion-button {
+        padding: 0.75rem 1rem;
+    }
+    
+    .nav-pills .nav-link {
+        font-size: 0.9rem;
+        padding: 0.75rem;
+    }
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.accordion-collapse.show {
+    animation: fadeIn 0.3s ease;
+}

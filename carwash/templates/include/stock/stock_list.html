@@ -1,0 +1,83 @@
+ {% load static %}
+<div class="table-container">
+  <table class="table table-success table-bordered">
+    <thead class="thead-dark">
+      <tr>
+        <th scope="col">Предмет</th>
+        <th scope="col">Кол-во</th>
+        <th scope="col">$</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+	{% for obj in stock_consumption %}
+	<tr>
+	  <td>{{ obj.stock.name }}</td>
+	  <td>{{ obj.quantity }}</td>
+	  <td>{{ obj.money }}</td>
+	  <td>
+	    <button class="help-button" data-bs-toggle="modal" data-bs-target="#modalstock-{{ obj.id }}">
+	      <img src="{% static 'images/help.svg' %}" alt="Помощь" width="20" height="20">
+	    </button>
+	  </td>
+	</tr>
+	<!-- Модальное окно -->
+	  <div class="modal fade" id="modalstock-{{ obj.id }}" style="text-align: center;" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	    <div class="modal-dialog">
+	      <div class="modal-content">
+	        <div class="modal-header">
+	          <h1 class="modal-title fs-5">Отчёт склада №{{ obj.id }}</h1>
+	          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+	        </div>
+			<div class="modal-body">
+			  <div class="row mb-3">
+			    <div class="col">
+			    <strong>Информация:</strong>
+				<ul class="list-group">
+				  <li class="list-group-item list-group-item-info"><strong>Товар:</strong> {{ obj.stock.name }}</li>
+				  <li class="list-group-item list-group-item-info"><strong>Количество:</strong> {{ obj.quantity }}</li>
+				  <li class="list-group-item list-group-item-info"><strong>Тип оплаты:</strong> {{ obj.pay }}</li>
+				  <li class="list-group-item list-group-item-info"><strong>Стоимость:</strong> {{ obj.money }}</li>
+				</ul>
+			    </div>
+			  </div>
+			
+			  <div class="row mb-3">
+			    <div class="col">
+			    	<form id="req-stock-desc" method="post" action="{% url 'add_req_stock' %}" class="box">
+						{% csrf_token %}
+				      	<input name="rw-id" type="hidden" value="{{ obj.id }}"></input>
+					    <strong>Описание проблемы и ее причин:</strong><br>
+					    {{ req_stock_form.description }}
+				        <div class="modal-footer">
+				        	<button type="submit" class="btn btn-dark">Отправить</button>
+				        </div>
+				    </form>
+			    </div>
+			  </div>
+	      </div>
+	    </div>
+	  </div>
+	{% endfor %}
+    </tbody>
+  </table>
+</div>
+<h5>Остаток скалада</h5>
+<div class="table-container">
+  <table class="table table-success table-bordered">
+    <thead class="thead-dark">
+      <tr>
+        <th scope="col">Предмет</th>
+        <th scope="col">Кол-во</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for obj in stock %}
+      <tr>
+        <td>{{ obj.name }}</td>
+        <td>{{ obj.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

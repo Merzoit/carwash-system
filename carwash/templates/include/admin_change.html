@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    <h2>Первая группа моделей</h2>
+    <li><a href="{% url 'admin:core_wash_changelist' %}">Список моек</a></li>
+    <li><a href="{% url 'admin:core_stock_changelist' %}">Список мойщиков</a></li>
+
+    <h2>Вторая группа моделей</h2>
+    <!-- Добавьте ссылки на другие модели -->
+{% endblock %}

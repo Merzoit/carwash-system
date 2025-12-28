@@ -1,0 +1,706 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Добавление операций</h1>
+        <p>Управление мойками и складскими операциями</p>
+    </div>
+
+    <!-- Контейнер с табами -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="wash-tab">Добавить мойку</button>
+            <button class="tab-btn" data-tab="stock-tab">Складская операция</button>
+        </div>
+
+        <!-- Вкладка добавления мойки -->
+        <div id="wash-tab" class="tab-content active">
+            <div class="form-card">
+                <div class="card-header">
+                    <i class="fas fa-car-wash"></i>
+                    <h3>Информация о мойке</h3>
+                </div>
+                <div class="card-body">
+                    <form id="washForm" method="post" action="{% url 'add_wash' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Основная информация -->
+                        <div class="form-section">
+                            <h4 class="section-title">Основная информация</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="id_grz" class="form-label">
+                                        <i class="fas fa-id-card"></i>
+                                        ГРЗ
+                                    </label>
+                                    {{ form.grz }}
+                                    <div class="form-hint">Государственный регистрационный знак</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_mark" class="form-label">
+                                        <i class="fas fa-car"></i>
+                                        Марка автомобиля
+                                    </label>
+                                    {{ form.mark }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_car_class" class="form-label">
+                                        <i class="fas fa-star"></i>
+                                        Класс автомобиля
+                                    </label>
+                                    {{ form.car_class }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_washman" class="form-label">
+                                        <i class="fas fa-user"></i>
+                                        Мойщик
+                                    </label>
+                                    {{ form.washman }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_pay" class="form-label">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        Тип оплаты
+                                    </label>
+                                    {{ form.pay }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные услуги -->
+                        <div class="form-section">
+                            <h4 class="section-title">Дополнительные услуги</h4>
+                            <div class="services-grid">
+                                <label class="service-checkbox">
+                                    <input type="checkbox" name="dry" id="dryService">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-soap"></i>
+                                    <span class="service-label">Химчистка</span>
+                                </label>
+
+                                <label class="service-checkbox">
+                                    <input type="checkbox" name="polishing" id="polishingService">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-gem"></i>
+                                    <span class="service-label">Полировка</span>
+                                </label>
+
+                                <label class="service-checkbox">
+                                    <input type="checkbox" name="night" id="nightService">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-moon"></i>
+                                    <span class="service-label">Ночная смена</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Финансовая информация -->
+                        <div class="form-section">
+                            <h4 class="section-title">Финансовая информация</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="id_service" class="form-label">
+                                        <i class="fas fa-concierge-bell"></i>
+                                        Основная услуга
+                                    </label>
+                                    {{ form.service }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_sale" class="form-label">
+                                        <i class="fas fa-tag"></i>
+                                        Скидка
+                                    </label>
+                                    {{ form.sale }}
+                                    <div class="form-hint">Размер скидки в рублях</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_add" class="form-label">
+                                        <i class="fas fa-plus-circle"></i>
+                                        Доплата
+                                    </label>
+                                    {{ form.add }}
+                                    <div class="form-hint">Дополнительные услуги</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки действий -->
+                        <div class="form-actions">
+                            <button type="submit" name="add_wash" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Добавить мойку
+                            </button>
+                            <button type="submit" name="preview_wash" class="btn btn-secondary">
+                                <i class="fas fa-eye"></i>
+                                Предпросмотр
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка складских операций -->
+        <div id="stock-tab" class="tab-content">
+            <div class="form-card">
+                <div class="card-header">
+                    <i class="fas fa-boxes"></i>
+                    <h3>Складская операция</h3>
+                </div>
+                <div class="card-body">
+                    <form id="stockForm" method="post" action="{% url 'add_stock_cons' %}">
+                        {% csrf_token %}
+                        
+                        <div class="form-section">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="id_stock" class="form-label">
+                                        <i class="fas fa-box"></i>
+                                        Наименование товара
+                                    </label>
+                                    {{ form.stock }}
+                                    <div class="form-hint">Выберите предмет со склада</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_quant" class="form-label">
+                                        <i class="fas fa-hashtag"></i>
+                                        Количество
+                                    </label>
+                                    {{ form.quant }}
+                                    <div class="form-hint">Укажите количество единиц</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_pay" class="form-label">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        Тип оплаты
+                                    </label>
+                                    {{ form.pay }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" name="add_stock" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Добавить на склад
+                            </button>
+                            <button type="submit" name="preview_stock" class="btn btn-secondary">
+                                <i class="fas fa-eye"></i>
+                                Предпросмотр
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы форм */
+    .forms-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .page-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .tabs-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .tabs-header {
+        display: flex;
+        background: var(--background);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn:hover {
+        background: rgba(37, 99, 235, 0.05);
+        color: var(--primary);
+    }
+
+    .tab-btn.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+        background: var(--surface);
+    }
+
+    .tab-content {
+        display: none;
+        padding: 0;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .form-card {
+        padding: 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background: var(--surface);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-hint {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .service-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid var(--border);
+    }
+
+    .service-checkbox:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+    }
+
+    .service-checkbox input[type="checkbox"] {
+        display: none;
+    }
+
+    .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .service-checkbox input[type="checkbox"]:checked + .checkmark {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .service-checkbox input[type="checkbox"]:checked + .checkmark::after {
+        content: '✓';
+        color: white;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .service-label {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .service-checkbox i {
+        color: var(--primary);
+        font-size: 1.1rem;
+        width: 20px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .forms-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+        }
+
+        .tabs-header {
+            flex-direction: column;
+        }
+
+        .tab-btn {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            border-left: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            border-left-color: var(--primary);
+            border-bottom-color: var(--border);
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .services-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            flex: none;
+        }
+
+        .form-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header {
+            padding: 0.75rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        .service-checkbox {
+            padding: 0.75rem;
+        }
+    }
+
+    /* Для планшетов */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .form-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .services-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Анимации */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-content.active {
+        animation: fadeIn 0.3s ease;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        document.getElementById('pageTitle').textContent = 'Добавление операций';
+        document.getElementById('contentTitle').textContent = 'Добавление мойки и складских операций';
+        document.getElementById('contentIcon').className = 'fas fa-plus-circle';
+
+        // Управление табами
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetTab = this.getAttribute('data-tab');
+                
+                // Убираем активный класс у всех кнопок и контента
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Добавляем активный класс к текущей кнопке и контенту
+                this.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+            });
+        });
+
+        // Обработка форм
+        const washForm = document.getElementById('washForm');
+        const stockForm = document.getElementById('stockForm');
+
+        function setupFormHandlers(form) {
+            form.addEventListener('submit', function(event) {
+                const submitter = event.submitter;
+                const action = submitter.name;
+                
+                // Добавляем скрытое поле с действием
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'form_action';
+                actionInput.value = action;
+                form.appendChild(actionInput);
+
+                // Показываем индикатор загрузки
+                const originalText = submitter.innerHTML;
+                submitter.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+                submitter.disabled = true;
+
+                // Восстанавливаем кнопку через 3 секунды (на случай ошибки)
+                setTimeout(() => {
+                    submitter.innerHTML = originalText;
+                    submitter.disabled = false;
+                }, 3000);
+            });
+        }
+
+        if (washForm) setupFormHandlers(washForm);
+        if (stockForm) setupFormHandlers(stockForm);
+
+        // Валидация форм
+        function setupValidation(form) {
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (!this.value) {
+                        this.style.borderColor = 'var(--error)';
+                    } else {
+                        this.style.borderColor = 'var(--border)';
+                    }
+                });
+
+                input.addEventListener('input', function() {
+                    this.style.borderColor = 'var(--border)';
+                });
+            });
+        }
+
+        if (washForm) setupValidation(washForm);
+        if (stockForm) setupValidation(stockForm);
+
+        // Автозаполнение для демо-данных
+        const demoGrz = '{{ demo.grz }}';
+        if (demoGrz && demoGrz !== 'None') {
+            const grzInput = document.getElementById('id_grz');
+            if (grzInput && !grzInput.value) {
+                grzInput.value = demoGrz;
+            }
+        }
+
+        // Улучшение UX для чекбоксов услуг
+        const serviceCheckboxes = document.querySelectorAll('.service-checkbox input[type="checkbox"]');
+        serviceCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.closest('.service-checkbox');
+                if (this.checked) {
+                    label.style.background = 'rgba(37, 99, 235, 0.1)';
+                    label.style.borderColor = 'var(--primary)';
+                } else {
+                    label.style.background = 'var(--background)';
+                    label.style.borderColor = 'var(--border)';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

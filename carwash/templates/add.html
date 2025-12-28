@@ -1,0 +1,1181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Добавление операций</h1>
+        <p>Управление мойками текущей смены</p>
+    </div>
+
+    <!-- Аккордеон с формой -->
+    <div class="accordion-container">
+        <div class="accordion-item active">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div class="accordion-title">
+                    <i class="fas fa-plus-circle"></i>
+                    <h3>Добавить мойку</h3>
+                </div>
+                <div class="accordion-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content" style="max-height: 2000px;">
+                <div class="form-card">
+            <div class="form-card">
+                <div class="card-header">
+                    <i class="fas fa-car-wash"></i>
+                    <h3>Информация о мойке</h3>
+                </div>
+                <div class="card-body">
+                    <form id="washForm" method="post" action="{% url 'add_wash' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Основная информация -->
+                        <div class="form-section">
+                            <h4 class="section-title">Основная информация</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="id_grz" class="form-label">
+                                        <i class="fas fa-id-card"></i>
+                                        ГРЗ
+                                    </label>
+                                    {{ form.grz }}
+                                    <div class="form-hint">Государственный регистрационный знак</div>
+                                    <div id="client-info" class="client-info" style="display: none;">
+                                        <i class="fas fa-user-check"></i>
+                                        <span id="client-name"></span>
+                                        <span id="client-discount" class="client-discount"></span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_mark" class="form-label">
+                                        <i class="fas fa-car"></i>
+                                        Марка автомобиля
+                                    </label>
+                                    {{ form.mark }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_car_class" class="form-label">
+                                        <i class="fas fa-star"></i>
+                                        Класс автомобиля
+                                    </label>
+                                    {{ form.car_class }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_washman" class="form-label">
+                                        <i class="fas fa-user"></i>
+                                        Мойщик
+                                    </label>
+                                    {{ form.washman }}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="id_pay" class="form-label">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        Тип оплаты
+                                    </label>
+                                    {{ form.pay }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные услуги -->
+                        <div class="form-section">
+                            <h4 class="section-title">Дополнительные услуги</h4>
+                            <div class="services-grid">
+                                <label class="service-checkbox">
+                                    <input type="checkbox" name="dry" id="dryService">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-soap"></i>
+                                    <span class="service-label">Химчистка</span>
+                                </label>
+
+                                <label class="service-checkbox">
+                                    <input type="checkbox" name="polishing" id="polishingService">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-gem"></i>
+                                    <span class="service-label">Полировка</span>
+                                </label>
+
+                                <label class="service-checkbox">
+                                    <input type="checkbox" name="night" id="nightService">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-moon"></i>
+                                    <span class="service-label">Ночная смена</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Финансовая информация -->
+                        <div class="form-section">
+                            <h4 class="section-title">Финансовая информация</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="id_service" class="form-label">
+                                        <i class="fas fa-concierge-bell"></i>
+                                        Основная услуга
+                                    </label>
+                                    {{ form.service }}
+                                </div>
+
+                                <!-- Скидка теперь применяется автоматически -->
+
+                                <div class="form-group">
+                                    <label for="id_add" class="form-label">
+                                        <i class="fas fa-plus-circle"></i>
+                                        Доплата
+                                    </label>
+                                    {{ form.add }}
+                                    <div class="form-hint">Дополнительные услуги</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки действий -->
+                        <div class="form-actions">
+                            <button type="submit" name="preview_wash" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Добавить мойку
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица с мойками текущей смены -->
+    <div class="washes-table-container animated-card">
+        <div class="table-header">
+            <h3><i class="fas fa-list"></i> Мойки текущей смены</h3>
+            <div class="table-stats">
+                <div class="stat-item animated-stat">
+                    <i class="fas fa-car"></i>
+                    <span class="stat-label">Всего:</span>
+                    <span class="stat-number" data-target="{{ total_washes }}">0</span>
+                </div>
+                <div class="stat-item animated-stat">
+                    <i class="fas fa-ruble-sign"></i>
+                    <span class="stat-label">Выручка:</span>
+                    <span class="stat-number" data-target="{{ total_revenue }}">0</span>
+                    <span class="stat-currency">₽</span>
+                </div>
+            </div>
+        </div>
+
+        {% if current_shift_washes %}
+        <div class="table-responsive">
+            <table class="washes-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-clock"></i> Время</th>
+                        <th><i class="fas fa-id-card"></i> ГРЗ</th>
+                        <th><i class="fas fa-car"></i> Марка</th>
+                        <th><i class="fas fa-star"></i> Класс</th>
+                        <th><i class="fas fa-user"></i> Мойщик</th>
+                        <th><i class="fas fa-money-bill-wave"></i> Оплата</th>
+                        <th><i class="fas fa-concierge-bell"></i> Услуги</th>
+                        <th><i class="fas fa-ruble-sign"></i> Стоимость</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wash in current_shift_washes %}
+                    <tr>
+                        <td>{{ wash.time|date:"H:i" }}</td>
+                        <td><strong>{{ wash.grz }}</strong></td>
+                        <td>{{ wash.mark }}</td>
+                        <td>
+                            {% if wash.car_class %}
+                                {{ wash.car_class.name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ wash.washman.name }}</td>
+                        <td>{{ wash.pay.name }}</td>
+                        <td>
+                            {% for service in wash.service.all %}
+                                <span class="service-tag">{{ service.name }}</span>
+                            {% empty %}
+                                -
+                            {% endfor %}
+                        </td>
+                        <td><strong>{{ wash.price }} ₽</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-washes">
+            <i class="fas fa-info-circle"></i>
+            <p>В текущей смене пока нет моек</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы форм */
+    .forms-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="%23ffffff" opacity="0.05"/><circle cx="50" cy="10" r="0.5" fill="%23ffffff" opacity="0.08"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        opacity: 0.3;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .page-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Стили для аккордеона */
+    .accordion-container {
+        margin-bottom: 2rem;
+    }
+
+    .accordion-item {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        animation: slideInUp 0.6s ease-out;
+    }
+
+    .accordion-item:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .accordion-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .accordion-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+
+    .accordion-header:hover::before {
+        transform: translateX(100%);
+    }
+
+    .accordion-header:hover {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    }
+
+    .accordion-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .accordion-title i {
+        font-size: 1.5rem;
+    }
+
+    .accordion-title h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .accordion-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .accordion-icon i {
+        font-size: 1.2rem;
+    }
+
+    .accordion-item.active .accordion-icon {
+        transform: rotate(180deg);
+    }
+
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-content {
+        max-height: 2000px;
+    }
+
+
+    .form-card {
+        padding: 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background: var(--surface);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-hint {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .client-info {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-top: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        animation: slideInUp 0.3s ease-out;
+    }
+
+    .client-info i {
+        font-size: 1rem;
+    }
+
+    .client-discount {
+        margin-left: auto;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .service-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid var(--border);
+    }
+
+    .service-checkbox:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+    }
+
+    .service-checkbox input[type="checkbox"] {
+        display: none;
+    }
+
+    .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .service-checkbox input[type="checkbox"]:checked + .checkmark {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .service-checkbox input[type="checkbox"]:checked + .checkmark::after {
+        content: '✓';
+        color: white;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .service-label {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .service-checkbox i {
+        color: var(--primary);
+        font-size: 1.1rem;
+        width: 20px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn-primary:hover::before {
+        left: 100%;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-primary:active {
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .forms-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+        }
+
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .services-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            flex: none;
+        }
+
+        .form-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header {
+            padding: 0.75rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        .service-checkbox {
+            padding: 0.75rem;
+        }
+    }
+
+    /* Для планшетов */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .form-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .services-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Стили для таблицы моек */
+    .washes-table-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23pattern)"/></svg>');
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .table-stats {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .animated-stat {
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .stat-label {
+        opacity: 0.8;
+    }
+
+    .stat-number {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #ffd700;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .stat-currency {
+        color: #ffd700;
+        margin-left: 2px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .washes-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .washes-table thead th {
+        background: var(--background);
+        color: var(--text-primary);
+        padding: 1rem 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .washes-table tbody td {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    .washes-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .washes-table tbody tr:hover {
+        background: rgba(37, 99, 235, 0.02);
+    }
+
+    .washes-table tbody tr:nth-child(even) {
+        background: var(--background);
+    }
+
+    .service-tag {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius);
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin: 0.125rem;
+    }
+
+    .no-washes {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .no-washes i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .no-washes p {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    /* Адаптивность для таблицы */
+    @media (max-width: 768px) {
+        .table-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .table-stats {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .washes-table {
+            font-size: 0.8rem;
+        }
+
+        .washes-table thead th,
+        .washes-table tbody td {
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+    /* Анимации */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% {
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+    }
+
+    @keyframes countUp {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .animated-card {
+        animation: slideInUp 0.8s ease-out;
+    }
+
+    .tab-content.active {
+        animation: fadeIn 0.3s ease;
+    }
+
+    .stat-number {
+        animation: countUp 0.6s ease-out;
+    }
+
+    /* Эффект ripple для кнопок */
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.6);
+        transform: scale(0);
+        animation: ripple 0.6s linear;
+        pointer-events: none;
+    }
+
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+
+    .btn {
+        position: relative;
+        overflow: hidden;
+    }
+</style>
+
+<script>
+    // Функция переключения аккордеона (определена глобально)
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.accordion-icon i');
+
+        // Проверяем текущее состояние
+        const isActive = item.classList.contains('active');
+
+        if (isActive) {
+            // Сворачиваем
+            item.classList.remove('active');
+            content.style.maxHeight = '0px';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            // Разворачиваем - сначала устанавливаем высоту для анимации
+            content.style.maxHeight = content.scrollHeight + 'px';
+            item.classList.add('active');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+
+            // После завершения анимации убираем фиксированную высоту
+            setTimeout(() => {
+                if (item.classList.contains('active')) {
+                    content.style.maxHeight = 'none';
+                }
+            }, 300);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        const pageTitle = document.getElementById('pageTitle');
+        const contentTitle = document.getElementById('contentTitle');
+        const contentIcon = document.getElementById('contentIcon');
+
+        if (pageTitle) pageTitle.textContent = 'Добавление операций';
+        if (contentTitle) contentTitle.textContent = 'Добавление мойки';
+        if (contentIcon) contentIcon.className = 'fas fa-plus-circle';
+
+        // Устанавливаем правильную высоту аккордеона после загрузки
+        setTimeout(function() {
+            const accordionItem = document.querySelector('.accordion-item.active');
+            if (accordionItem) {
+                const content = accordionItem.querySelector('.accordion-content');
+                if (content) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            }
+        }, 100);
+
+        // Обработка формы
+        const washForm = document.getElementById('washForm');
+
+        if (washForm) {
+            washForm.addEventListener('submit', function(event) {
+                const submitter = event.submitter;
+                const action = submitter.name;
+
+                // Добавляем скрытое поле с действием
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'form_action';
+                actionInput.value = action;
+                washForm.appendChild(actionInput);
+
+                // Показываем индикатор загрузки
+                const originalText = submitter.innerHTML;
+                submitter.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+                submitter.disabled = true;
+
+                // Восстанавливаем кнопку через 3 секунды (на случай ошибки)
+                setTimeout(() => {
+                    submitter.innerHTML = originalText;
+                    submitter.disabled = false;
+                }, 3000);
+            });
+        }
+
+        // Валидация формы
+        if (washForm) {
+            const inputs = washForm.querySelectorAll('input[required], select[required]');
+
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (!this.value) {
+                        this.style.borderColor = 'var(--error)';
+                    } else {
+                        this.style.borderColor = 'var(--border)';
+                    }
+                });
+
+                input.addEventListener('input', function() {
+                    this.style.borderColor = 'var(--border)';
+                });
+            });
+        }
+
+        // Автоматический поиск клиента по гос номеру
+        const grzInput = document.getElementById('id_grz');
+        const clientInfo = document.getElementById('client-info');
+        const clientName = document.getElementById('client-name');
+        const clientDiscount = document.getElementById('client-discount');
+
+        if (grzInput) {
+            grzInput.addEventListener('input', function() {
+                const grz = this.value.trim().toUpperCase();
+                this.value = grz; // Автоформатирование в верхний регистр
+
+                if (grz.length >= 3) {
+                    // Поиск клиента по гос номеру
+                    const clients = {{ clients|safe }};
+                    let foundClient = null;
+
+                    for (let client of clients) {
+                        if (client.license_plate.toUpperCase() === grz) {
+                            foundClient = client;
+                            break;
+                        }
+                    }
+
+                    if (foundClient) {
+                        clientName.textContent = foundClient.name;
+                        clientDiscount.textContent = foundClient.discount > 0 ? `Скидка: ${foundClient.discount}%` : '';
+                        clientInfo.style.display = 'flex';
+
+                        // Анимация появления
+                        clientInfo.style.animation = 'none';
+                        setTimeout(() => {
+                            clientInfo.style.animation = 'slideInUp 0.3s ease-out';
+                        }, 10);
+                    } else {
+                        clientInfo.style.display = 'none';
+                    }
+                } else {
+                    clientInfo.style.display = 'none';
+                }
+            });
+
+            // Проверка при загрузке страницы
+            if (grzInput.value.trim()) {
+                grzInput.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // Автозаполнение для демо-данных
+        const demoGrz = '{{ demo.grz }}';
+        if (demoGrz && demoGrz !== 'None') {
+            const grzInput = document.getElementById('id_grz');
+            if (grzInput && !grzInput.value) {
+                grzInput.value = demoGrz;
+                // Запускаем поиск клиента
+                setTimeout(() => {
+                    grzInput.dispatchEvent(new Event('input'));
+                }, 100);
+            }
+        }
+
+        // Анимация счетчиков
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-target')) || 0;
+                const current = parseInt(counter.textContent) || 0;
+                const increment = target / 50; // Скорость анимации
+
+                if (current < target) {
+                    const timer = setInterval(() => {
+                        const newValue = Math.ceil(parseInt(counter.textContent) + increment);
+                        if (newValue >= target) {
+                            counter.textContent = target;
+                            clearInterval(timer);
+                        } else {
+                            counter.textContent = newValue;
+                        }
+                    }, 30);
+                }
+            });
+        }
+
+        // Запускаем анимацию счетчиков при загрузке
+        animateCounters();
+
+        // Улучшение UX для чекбоксов услуг с анимациями
+        const serviceCheckboxes = document.querySelectorAll('.service-checkbox input[type="checkbox"]');
+        serviceCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.closest('.service-checkbox');
+                if (this.checked) {
+                    label.style.background = 'rgba(37, 99, 235, 0.1)';
+                    label.style.borderColor = 'var(--primary)';
+                    label.style.transform = 'scale(1.02)';
+                    label.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.2)';
+                } else {
+                    label.style.background = 'var(--background)';
+                    label.style.borderColor = 'var(--border)';
+                    label.style.transform = 'scale(1)';
+                    label.style.boxShadow = 'none';
+                }
+            });
+        });
+
+        // Анимация появления карточек
+        const cards = document.querySelectorAll('.accordion-item, .washes-table-container');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Эффект ripple для кнопок
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const circle = document.createElement('span');
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+            circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+            circle.classList.add('ripple');
+
+            const ripple = button.getElementsByClassName('ripple')[0];
+            if (ripple) {
+                ripple.remove();
+            }
+
+            button.appendChild(circle);
+        }
+
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', createRipple);
+        });
+    });
+</script>
+{% endblock %}

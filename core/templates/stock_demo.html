@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Предпросмотр мойки</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-cont {
+            width: 80vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .list-group {
+            width: 100%;
+        }
+
+        /* Добавьте свои собственные стили здесь, если необходимо */
+    </style>
+</head>
+<body>
+
+<div class="container menu-cont">
+    <div class="row mb-3">
+        <div class="col">
+            <h4 class="mb-4">Предпросмотр склада</h4>
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-info"><strong>Наименование:</strong> {{ stock }}</li>
+                <li class="list-group-item list-group-item-info"><strong>Стоимость предмета:</strong> {{ stock_price }}</li>
+                <li class="list-group-item list-group-item-info"><strong>Количество:</strong> {{ quantity }}</li>
+                <li class="list-group-item list-group-item-info"><strong>Тип оплаты:</strong> {{ pay }}</li>
+                <li class="list-group-item list-group-item-info"><strong>Стоимость:</strong><b style="color: green;"> {{ price }}</b></li>
+            </ul>
+        </div>
+    </div>
+	<button class="btn btn-dark" onclick="goBack()">Назад</button>
+<script>
+    function goBack() {
+        window.history.back();
+    }
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

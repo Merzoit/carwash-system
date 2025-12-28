@@ -1,0 +1,105 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/add_wash.css' %}">
+
+<div class="container">
+    <div class="row">
+	
+	<div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card mb-3" style="background-color: #ebebeb">
+        <div class="card-header">
+          <strong>Информация о мойке</strong>
+        </div>
+        <div class="card-body">
+            <form id="update_data" method="post" action="{% url 'add_wash' %}" class="box">
+                {% csrf_token %}
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="grz" class="label-form">ГРЗ</label>
+                        {{ form.grz }}
+                    </div>
+                    <div class="form-group">
+                        <label for="mark" class="label-form">Марка</label>
+                        {{ form.mark }}
+                    </div>
+                    <div class="form-group">
+                        <label for="car_class" class="label-form">Класс</label>
+                        {{ form.car_class }}
+                    </div>
+                    <div class="form-group">
+                        <label for="washman" class="label-form">Мойщик</label>
+                        {{ form.washman }}
+                    </div>
+                    <div class="form-group">
+                        <label for="pay" class="label-form">Оплата</label>
+                        {{ form.pay }}
+                    </div>
+                </div>
+				{{ demo.grz }}
+                <div class="form-section">
+				<div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="dry" id="flexSwitchCheckDefault1">
+                    <label class="form-check-label" for="flexSwitchCheckDefault1">Химчистка</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="polishing" id="flexSwitchCheckDefault2">
+                    <label class="form-check-label" for="flexSwitchCheckDefault2">Полировка</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="night" id="flexSwitchCheckDefault3">
+                    <label class="form-check-label" for="flexSwitchCheckDefault3">Ночная</label>
+                </div>
+                </div>
+
+                <div class="form-section">
+				<div class="form-group">
+                <label for="service" class="label-form">Услуги</label>
+                {{ form.service }}
+            	</div>
+            	<div class="form-group">
+                <label for="sale" class="label-form">Скидка</label>
+                {{ form.sale }}
+            	</div>
+            	<div class="form-group">
+                <label for="add" class="label-form">Доплата</label>
+                {{ form.add }}
+            	</div>
+                </div>
+				
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-dark" name="add_wash">Добавить мойку</button>
+                    <button type="submit" class="btn btn-dark" name="preview_wash">Предпросмотр</button>
+                </div>
+		
+            </form>
+        </div>
+      </div>
+    </div>
+	</div>
+    </div>
+</div>
+
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('washForm');
+
+    form.addEventListener('submit', function(event) {
+      var action = event.submitter.value;
+      
+      // Добавьте скрытое поле с именем 'action', чтобы передать действие в ваш представление
+      var actionInput = document.createElement('input');
+      actionInput.type = 'hidden';
+      actionInput.name = 'action';
+      actionInput.value = action;
+      form.appendChild(actionInput);
+    });
+  });
+</script>
+
+
+
+
+
+

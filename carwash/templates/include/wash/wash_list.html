@@ -1,0 +1,79 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/wash_list.css' %}">
+
+<table class="table table-success table-bordered">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">Время</th>
+      <th scope="col">ГРЗ</th>
+      <th scope="col">Мойщик</th>
+      <th scope="col">Тип оплаты</th>
+      <th scope="col">Скидка</th>
+      <th scope="col">Стоимость</th>
+      <th scope="col">Ночная</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+<tbody>
+  {% for obj in Wash %}
+  <tr {% if obj.night %} class="table-warning" {% endif %}>
+    <td>{{ obj.time }}</td>
+    <td>{{ obj.grz }}</td>
+    <td>{{ obj.washman }}</td>
+    <td>{{ obj.pay }}</td>
+    <td>{{ obj.sale }}</td>
+    <td>{{ obj.price }}</td>
+    <td>{% if obj.night %}+{% else %}-{% endif %}</td>
+    <td>
+      <button class="help-button" data-bs-toggle="modal" data-bs-target="#modalwash-{{ obj.id }}">
+        <img src="{% static 'images/help.svg' %}" alt="Помощь" width="20" height="20">
+      </button>
+    </td>
+  </tr>
+
+  <!-- Модальное окно -->
+  <div class="modal fade" id="modalwash-{{ obj.id }}" style="text-align: center;" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5">Отчёт мойки №{{ obj.id }}</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+		<div class="modal-body">
+		  <div class="row mb-3">
+		    <div class="col">
+		    	<strong>Информация:</strong>
+			<ul class="list-group">
+			  <li class="list-group-item list-group-item-info"><strong>Время:</strong> {{ obj.time }}</li>
+			  <li class="list-group-item list-group-item-info"><strong>ГРЗ:</strong> {{ obj.grz }}</li>
+			  <li class="list-group-item list-group-item-info"><strong>Мойщик:</strong> {{ obj.washman }}</li>
+			  <li class="list-group-item list-group-item-info"><strong>Оплата:</strong> {{ obj.pay }}</li>
+			  <li class="list-group-item list-group-item-info"><strong>Скидка:</strong> {{ obj.sale }}</li>
+			  <li class="list-group-item list-group-item-info"><strong>Стоимость:</strong> {{ obj.price }}</li>
+			  <li class="list-group-item list-group-item-info"><strong>Ночная мойка:</strong> {% if obj.night %}Да{% else %}Нет{% endif %}</li>
+			</ul>
+		    </div>
+		  </div>
+		
+		  <div class="row mb-3">
+		    <div class="col">
+		      <form id="req-wash-desc" method="post" action="{% url 'add_req_wash' %}" class="box">
+				{% csrf_token %}
+		      	<input name="rw-id" type="hidden" value="{{ obj.id }}"></input>
+		    	<strong>Описание проблемы и ее причин:</strong><br>
+		    	{{ req_wash_form.description }}
+		    	<div class="modal-footer">
+        			<button type="submit" class="btn btn-dark" name="add_req_wash">Отправить</button>
+        		</div>
+		      </form>
+		    </div>
+		  </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</tbody>
+
+</table>
+
+

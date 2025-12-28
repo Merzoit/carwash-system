@@ -1,0 +1,524 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="preview-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Предпросмотр мойки</h1>
+        <p>Проверка данных перед добавлением</p>
+    </div>
+
+    <!-- Карточка с информацией о мойке -->
+    <div class="preview-card">
+        <div class="card-header">
+            <i class="fas fa-eye"></i>
+            <h3>Информация о мойке</h3>
+        </div>
+
+        <div class="card-body">
+            <div class="preview-grid">
+                <!-- Основная информация -->
+                <div class="info-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Основная информация
+                    </h4>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <span class="info-label">ГРЗ:</span>
+                            <span class="info-value">{{ grz }}</span>
+                        </div>
+                        {% if client_name %}
+                        <div class="info-item">
+                            <span class="info-label">Клиент:</span>
+                            <span class="info-value">{{ client_name }} {% if client_discount > 0 %}<span class="client-badge">Скидка: {{ client_discount }}%</span>{% endif %}</span>
+                        </div>
+                        {% endif %}
+                        <div class="info-item">
+                            <span class="info-label">Марка автомобиля:</span>
+                            <span class="info-value">{{ mark }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Мойщик:</span>
+                            <span class="info-value">{{ washman }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Тип оплаты:</span>
+                            <span class="info-value">{{ pay }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Услуги -->
+                <div class="info-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-concierge-bell"></i>
+                        Выбранные услуги
+                    </h4>
+                    <div class="services-preview">
+                        {% for service_item in service %}
+                        <div class="service-tag">
+                            <i class="fas fa-check"></i>
+                            {{ service_item }}
+                        </div>
+                        {% endfor %}
+                        {% if not service %}
+                        <div class="no-services">Услуги не выбраны</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Дополнительные опции -->
+                <div class="info-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-cogs"></i>
+                        Дополнительные опции
+                    </h4>
+                    <div class="options-grid">
+                        <div class="option-item {% if night %}active{% endif %}">
+                            <i class="fas fa-moon"></i>
+                            <span>Ночная мойка</span>
+                            {% if night %}<i class="fas fa-check-circle check-icon"></i>{% endif %}
+                        </div>
+                        <div class="option-item {% if dry %}active{% endif %}">
+                            <i class="fas fa-soap"></i>
+                            <span>Химчистка</span>
+                            {% if dry %}<i class="fas fa-check-circle check-icon"></i>{% endif %}
+                        </div>
+                        <div class="option-item {% if polishing %}active{% endif %}">
+                            <i class="fas fa-gem"></i>
+                            <span>Полировка</span>
+                            {% if polishing %}<i class="fas fa-check-circle check-icon"></i>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Финансовая информация -->
+                <div class="info-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-calculator"></i>
+                        Финансовая информация
+                    </h4>
+                    <div class="finance-info">
+                        {% if client_discount > 0 %}
+                        <div class="finance-item">
+                            <span class="finance-label">Скидка клиента:</span>
+                            <span class="finance-value">{{ client_discount }}%</span>
+                        </div>
+                        {% elif sale > 0 %}
+                        <div class="finance-item">
+                            <span class="finance-label">Дополнительная скидка:</span>
+                            <span class="finance-value">{{ sale }} ₽</span>
+                        </div>
+                        {% endif %}
+                        <div class="finance-item total">
+                            <span class="finance-label">Итоговая стоимость:</span>
+                            <span class="finance-value total-price">{{ price }} ₽</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="preview-actions">
+            <button class="btn btn-secondary" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i>
+                Вернуться к форме
+            </button>
+            <form method="post" action="{% url 'add_wash' %}" style="display: inline;">
+                {% csrf_token %}
+                <!-- Копируем все данные из оригинальной формы -->
+                <input type="hidden" name="grz" value="{{ grz }}">
+                <input type="hidden" name="mark" value="{{ mark }}">
+                <input type="hidden" name="car_class" value="{{ car_class_id }}">
+                <input type="hidden" name="washman" value="{{ washman_id }}">
+                <input type="hidden" name="pay" value="{{ pay_id }}">
+                {% for service_item in service %}
+                <input type="hidden" name="service" value="{{ service_item.id }}">
+                {% endfor %}
+                {% if night %}
+                <input type="hidden" name="night" value="on">
+                {% endif %}
+                {% if dry %}
+                <input type="hidden" name="dry" value="on">
+                {% endif %}
+                {% if polishing %}
+                <input type="hidden" name="polishing" value="on">
+                {% endif %}
+                <input type="hidden" name="sale" value="{{ sale }}">
+                <input type="hidden" name="add" value="{{ add }}">
+                <button type="submit" name="confirm_add_wash" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Подтвердить и добавить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы предпросмотра */
+    .preview-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .page-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .preview-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .info-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title i {
+        color: var(--primary);
+    }
+
+    .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .info-value {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .services-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .service-tag {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border-radius: var(--radius);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .client-badge {
+        background: var(--success);
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+        display: inline-block;
+    }
+
+    .service-tag i {
+        font-size: 0.8rem;
+    }
+
+    .no-services {
+        color: var(--text-secondary);
+        font-style: italic;
+        padding: 1rem;
+        text-align: center;
+        background: var(--background);
+        border-radius: var(--radius);
+    }
+
+    .options-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .option-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .option-item.active {
+        border-color: var(--primary);
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    .option-item i {
+        color: var(--primary);
+        font-size: 1.1rem;
+        width: 20px;
+    }
+
+    .option-item span {
+        font-weight: 500;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    .check-icon {
+        color: var(--success);
+    }
+
+    .finance-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .finance-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius);
+    }
+
+    .finance-item.total {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+    }
+
+    .finance-label {
+        font-size: 0.9rem;
+    }
+
+    .finance-value {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .total-price {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .preview-actions {
+        display: flex;
+        gap: 1rem;
+        padding: 1.5rem 2rem;
+        background: var(--background);
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .preview-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .preview-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .options-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .preview-actions {
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        .btn {
+            flex: none;
+        }
+
+        .info-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .info-value {
+            align-self: flex-end;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header {
+            padding: 0.75rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+        }
+
+        .finance-value {
+            font-size: 0.9rem;
+        }
+
+        .total-price {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+
+<script>
+    function goBack() {
+        window.history.back();
+    }
+
+    // Обновляем заголовок страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('pageTitle').textContent = 'Предпросмотр';
+        document.getElementById('contentTitle').textContent = 'Предпросмотр мойки';
+        document.getElementById('contentIcon').className = 'fas fa-eye';
+    });
+</script>
+{% endblock %}
+
+

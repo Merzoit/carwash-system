@@ -1,0 +1,977 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="analytics-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Аналитика автомойки</h1>
+        <p>Комплексный анализ работы и эффективности</p>
+    </div>
+
+    <!-- Основные метрики -->
+    <div class="metrics-grid">
+        <div class="metric-card total">
+            <div class="metric-icon">
+                <i class="fas fa-car"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-value">{{ total_washes }}</div>
+                <div class="metric-label">Всего моек</div>
+                <div class="metric-change">
+                    <span class="change-value">+{{ month_wash_count }}</span>
+                    <span class="change-label">за 30 дней</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-card revenue">
+            <div class="metric-icon">
+                <i class="fas fa-ruble-sign"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-value">{{ total_revenue|floatformat:0 }}₽</div>
+                <div class="metric-label">Общий доход</div>
+                <div class="metric-change">
+                    <span class="change-value">+{{ month_revenue|floatformat:0 }}₽</span>
+                    <span class="change-label">за 30 дней</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metric-card average">
+            <div class="metric-icon">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-value">{{ avg_wash_price|floatformat:0 }}₽</div>
+                <div class="metric-label">Средний чек</div>
+                <div class="metric-change">
+                    <span class="change-label">на мойку</span>
+                </div>
+            </div>
+        </div>
+
+        {% if current_shift %}
+        <div class="metric-card shift">
+            <div class="metric-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-value">{{ shift_wash_count }}</div>
+                <div class="metric-label">Моек в смене</div>
+                <div class="metric-change">
+                    <span class="change-value">{{ shift_total_revenue|floatformat:0 }}₽</span>
+                    <span class="change-label">выручка</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Графики и диаграммы -->
+    <div class="charts-grid">
+        <!-- Линейный график доходов -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-line"></i> Динамика доходов</h3>
+                <span class="chart-period">7 дней</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="revenueChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Круговая диаграмма услуг -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-pie"></i> Популярные услуги</h3>
+                <span class="chart-info">Топ-5 услуг</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="servicesChart" width="300" height="300"></canvas>
+            </div>
+            <div class="chart-legend" id="servicesLegend"></div>
+        </div>
+
+        <!-- Столбчатая диаграмма классов ТС -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-bar"></i> Доходы по классам ТС</h3>
+                <span class="chart-info">Топ-6 классов</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="carClassesChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Детальная статистика -->
+    <div class="details-grid">
+        <!-- Популярные услуги -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <h3><i class="fas fa-star"></i> Популярные услуги</h3>
+            </div>
+            <div class="detail-content">
+                {% for service, count, percentage in popular_services %}
+                <div class="service-item">
+                    <div class="service-info">
+                        <span class="service-name">{{ service }}</span>
+                        <span class="service-count">{{ count }} моек</span>
+                    </div>
+                    <div class="service-bar">
+                        <div class="service-bar-fill" style="width: {{ percentage }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Статистика по классам ТС -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <h3><i class="fas fa-car"></i> Классы транспортных средств</h3>
+            </div>
+            <div class="detail-content">
+                {% for car_class in car_classes_stats %}
+                <div class="car-class-item">
+                    <div class="car-class-info">
+                        <span class="car-class-name">{{ car_class.car_class__name|default:"Не указан" }}</span>
+                        <div class="car-class-stats">
+                            <span>{{ car_class.wash_count }} моек</span>
+                            <span>{{ car_class.total_revenue|floatformat:0 }}₽</span>
+                            <span>~{{ car_class.avg_price|floatformat:0 }}₽/мойка</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Статистика сотрудников -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <h3><i class="fas fa-users"></i> Эффективность сотрудников</h3>
+            </div>
+            <div class="detail-content">
+                {% for washman in washmen_stats %}
+                <div class="washman-item">
+                    <div class="washman-info">
+                        <span class="washman-name">{{ washman.name }}</span>
+                        <div class="washman-stats">
+                            <span>{{ washman.total_washes }} моек</span>
+                            <span>{{ washman.total_revenue|floatformat:0 }}₽</span>
+                            <span>~{{ washman.avg_wash_price|floatformat:0 }}₽/мойка</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Типы оплаты -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <h3><i class="fas fa-credit-card"></i> Типы оплаты</h3>
+            </div>
+            <div class="detail-content">
+                {% for pay_type in pay_types_stats %}
+                <div class="pay-type-item">
+                    <div class="pay-type-info">
+                        <span class="pay-type-name">{{ pay_type.pay__name }}</span>
+                        <div class="pay-type-stats">
+                            <span>{{ pay_type.wash_count }} моек</span>
+                            <span>{{ pay_type.total_revenue|floatformat:0 }}₽</span>
+                        </div>
+                    </div>
+                    <div class="pay-type-bar">
+                        <div class="pay-type-bar-fill" style="width: {{ pay_type.percentage }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика текущей смены -->
+    {% if current_shift %}
+    <div class="shift-stats">
+        <div class="shift-header">
+            <h2><i class="fas fa-clock"></i> Статистика текущей смены</h2>
+            <div class="shift-info">
+                <span>Моек: {{ shift_wash_count }}</span>
+                <span>Выручка: {{ shift_total_revenue|floatformat:0 }}₽</span>
+            </div>
+        </div>
+
+        <div class="shift-details">
+            <!-- Услуги в смене -->
+            <div class="shift-services">
+                <h4>Услуги в смене</h4>
+                {% for service, count in shift_popular_services %}
+                <div class="shift-service-item">
+                    <span>{{ service }}</span>
+                    <span>{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Классы ТС в смене -->
+            <div class="shift-car-classes">
+                <h4>Классы ТС в смене</h4>
+                {% for car_class in shift_car_classes %}
+                <div class="shift-car-class-item">
+                    <span>{{ car_class.car_class__name|default:"Не указан" }}</span>
+                    <div class="shift-car-class-stats">
+                        <span>{{ car_class.wash_count }} моек</span>
+                        <span>{{ car_class.total_revenue|floatformat:0 }}₽</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Стили для страницы аналитики */
+    .analytics-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="analytics-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1.5" fill="rgba(255,255,255,0.2)"/></pattern></defs><rect width="100" height="100" fill="url(%23analytics-pattern)"/></svg>');
+        opacity: 0.4;
+    }
+
+    .page-header h1 {
+        position: relative;
+        z-index: 1;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-header p {
+        position: relative;
+        z-index: 1;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Метрики */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: slideInUp 0.8s ease-out;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .metric-card.total::before { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+    .metric-card.revenue::before { background: linear-gradient(90deg, #10b981, #059669); }
+    .metric-card.average::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .metric-card.shift::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .metric-content {
+        flex: 1;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-change {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .change-value {
+        color: var(--success);
+        font-weight: 600;
+    }
+
+    .change-label {
+        color: var(--text-secondary);
+    }
+
+    /* Графики */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .chart-header {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chart-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chart-period,
+    .chart-info {
+        font-size: 0.85rem;
+        opacity: 0.9;
+    }
+
+    .chart-container {
+        padding: 1.5rem;
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chart-legend {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    .legend-text {
+        flex: 1;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .legend-value {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    /* Детальная статистика */
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .detail-header {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 1.5rem;
+    }
+
+    .detail-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .detail-content {
+        padding: 1.5rem;
+    }
+
+    /* Элементы услуг */
+    .service-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .service-item:last-child {
+        border-bottom: none;
+    }
+
+    .service-item:hover {
+        background: rgba(16, 185, 129, 0.05);
+    }
+
+    .service-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+    }
+
+    .service-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .service-count {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .service-bar {
+        width: 100px;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-left: 1rem;
+    }
+
+    .service-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #059669);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    /* Элементы классов ТС */
+    .car-class-item {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .car-class-item:last-child {
+        border-bottom: none;
+    }
+
+    .car-class-item:hover {
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .car-class-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .car-class-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .car-class-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    /* Элементы сотрудников */
+    .washman-item {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .washman-item:last-child {
+        border-bottom: none;
+    }
+
+    .washman-item:hover {
+        background: rgba(245, 158, 11, 0.05);
+    }
+
+    .washman-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .washman-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .washman-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    /* Элементы типов оплаты */
+    .pay-type-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .pay-type-item:last-child {
+        border-bottom: none;
+    }
+
+    .pay-type-item:hover {
+        background: rgba(239, 68, 68, 0.05);
+    }
+
+    .pay-type-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+    }
+
+    .pay-type-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .pay-type-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .pay-type-bar {
+        width: 100px;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-left: 1rem;
+    }
+
+    .pay-type-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    /* Статистика смены */
+    .shift-stats {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        border-radius: var(--radius);
+        padding: 2rem;
+        color: white;
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+    }
+
+    .shift-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .shift-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .shift-info {
+        display: flex;
+        gap: 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .shift-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .shift-services,
+    .shift-car-classes {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .shift-services h4,
+    .shift-car-classes h4 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        opacity: 0.9;
+    }
+
+    .shift-service-item,
+    .shift-car-class-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .shift-service-item:last-child,
+    .shift-car-class-item:last-child {
+        border-bottom: none;
+    }
+
+    .shift-car-class-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .analytics-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .metrics-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .charts-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .shift-details {
+            grid-template-columns: 1fr;
+        }
+
+        .metric-card {
+            padding: 1rem;
+        }
+
+        .metric-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+        }
+
+        .chart-container {
+            height: 250px;
+            padding: 1rem;
+        }
+    }
+
+    /* Анимации */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        const pageTitle = document.getElementById('pageTitle');
+        const contentTitle = document.getElementById('contentTitle');
+        const contentIcon = document.getElementById('contentIcon');
+
+        if (pageTitle) pageTitle.textContent = 'Аналитика';
+        if (contentTitle) contentTitle.textContent = 'Анализ работы автомойки';
+        if (contentIcon) contentIcon.className = 'fas fa-chart-bar';
+
+        // Данные для графиков из контекста Django
+        const revenueData = {{ revenue_chart_data|safe }};
+        const servicesData = {{ services_chart_data|safe }};
+        const carClassesData = {{ car_classes_chart_data|safe }};
+
+        // Цвета для графиков
+        const colors = [
+            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+            '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6b7280'
+        ];
+
+        // Линейный график доходов
+        if (revenueData.length > 0) {
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: revenueData.map(item => item.date),
+                    datasets: [{
+                        label: 'Доход (₽)',
+                        data: revenueData.map(item => item.revenue),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Доход: ${context.parsed.y.toLocaleString()} ₽`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' ₽';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Круговая диаграмма услуг
+        if (servicesData.length > 0) {
+            const servicesCtx = document.getElementById('servicesChart').getContext('2d');
+            const servicesChart = new Chart(servicesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: servicesData.map(item => item.name),
+                    datasets: [{
+                        data: servicesData.map(item => item.value),
+                        backgroundColor: colors.slice(0, servicesData.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const data = servicesData[context.dataIndex];
+                                    return `${data.name}: ${data.value} (${data.percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Создаем легенду
+            const legendContainer = document.getElementById('servicesLegend');
+            if (legendContainer) {
+                servicesData.forEach((item, index) => {
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    legendItem.innerHTML = `
+                        <span class="legend-color" style="background-color: ${colors[index]}"></span>
+                        <span class="legend-text">${item.name}</span>
+                        <span class="legend-value">${item.value} (${item.percentage}%)</span>
+                    `;
+                    legendContainer.appendChild(legendItem);
+                });
+            }
+        }
+
+        // Столбчатая диаграмма классов ТС
+        if (carClassesData.length > 0) {
+            const carClassesCtx = document.getElementById('carClassesChart').getContext('2d');
+            new Chart(carClassesCtx, {
+                type: 'bar',
+                data: {
+                    labels: carClassesData.map(item => item.name),
+                    datasets: [{
+                        label: 'Доход (₽)',
+                        data: carClassesData.map(item => item.revenue),
+                        backgroundColor: colors.slice(0, carClassesData.length).map(color => color + '80'),
+                        borderColor: colors.slice(0, carClassesData.length),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const data = carClassesData[context.dataIndex];
+                                    return [
+                                        `Доход: ${data.revenue.toLocaleString()} ₽`,
+                                        `Моек: ${data.washes}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' ₽';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+{% endblock %}

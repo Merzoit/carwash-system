@@ -1,0 +1,1134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="forms-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1>Складские операции</h1>
+        <p>Управление складом и товарами</p>
+    </div>
+
+
+    <!-- Аккордеон с формой -->
+    <div class="accordion-container">
+        <div class="accordion-item active">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div class="accordion-title">
+                    <i class="fas fa-boxes"></i>
+                    <h3>Добавить складскую операцию</h3>
+                </div>
+                <div class="accordion-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content" style="max-height: 2000px;">
+                <div class="form-card">
+                    <div class="card-header">
+                        <i class="fas fa-plus-circle"></i>
+                        <h3>Новая операция</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="stockForm" method="post" action="{% url 'add_stock_cons' %}">
+                            {% csrf_token %}
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="{{ stock_form.stock.id_for_label }}" class="form-label">
+                                            <i class="fas fa-box"></i>
+                                            Наименование товара
+                                        </label>
+                                        {{ stock_form.stock }}
+                                        <div class="form-hint">Выберите предмет со склада</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ stock_form.quantity.id_for_label }}" class="form-label">
+                                            <i class="fas fa-hashtag"></i>
+                                            Количество
+                                        </label>
+                                        {{ stock_form.quantity }}
+                                        <div class="form-hint">Укажите количество единиц</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="{{ stock_form.pay.id_for_label }}" class="form-label">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                            Тип оплаты
+                                        </label>
+                                        {{ stock_form.pay }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Кнопки действий -->
+                            <div class="form-actions">
+                                <button type="submit" name="preview_stock" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i>
+                                    Добавить операцию
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Аккордеон с остатком товаров -->
+    <div class="accordion-container">
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div class="accordion-title">
+                    <i class="fas fa-warehouse"></i>
+                    <h3>Остатки товаров на складе</h3>
+                </div>
+                <div class="accordion-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content">
+                <div class="stock-balance-container">
+                    <div class="stock-balance-grid">
+                        {% for stock_item in stock_balance %}
+                        <div class="stock-item-card" data-stock-id="{{ stock_item.id }}">
+                            <div class="stock-item-header">
+                                <h4>{{ stock_item.name }}</h4>
+                                <span class="stock-quantity {% if stock_item.quantity <= 5 %}low-stock{% endif %}">
+                                    {{ stock_item.quantity }} шт.
+                                </span>
+                            </div>
+                            <div class="stock-item-details">
+                                <span class="stock-price">{{ stock_item.price }} ₽/шт</span>
+                                <span class="stock-total">{{ stock_item.total_value }} ₽</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="no-stock">
+                            <i class="fas fa-info-circle"></i>
+                            <p>На складе нет товаров</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица с складскими операциями текущей смены -->
+    <div class="washes-table-container">
+        <div class="table-header">
+            <h3><i class="fas fa-list"></i> Операции текущей смены</h3>
+            <div class="table-stats">
+                <span class="stat-item">
+                    <i class="fas fa-boxes"></i>
+                    Всего: {{ total_operations }}
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-ruble-sign"></i>
+                    Расход: {{ total_consumption }} ₽
+                </span>
+            </div>
+        </div>
+
+        {% if current_shift_stock_consumptions %}
+        <div class="table-responsive">
+            <table class="washes-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-clock"></i> Время</th>
+                        <th><i class="fas fa-box"></i> Товар</th>
+                        <th><i class="fas fa-hashtag"></i> Кол-во</th>
+                        <th><i class="fas fa-money-bill-wave"></i> Оплата</th>
+                        <th><i class="fas fa-ruble-sign"></i> Стоимость</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for operation in current_shift_stock_consumptions %}
+                    <tr>
+                        <td>{{ operation.created_at|date:"H:i" }}</td>
+                        <td><strong>{{ operation.stock.name }}</strong></td>
+                        <td>{{ operation.quantity }} шт.</td>
+                        <td>{{ operation.pay.name }}</td>
+                        <td><strong>{{ operation.money }} ₽</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-washes">
+            <i class="fas fa-info-circle"></i>
+            <p>В текущей смене пока нет складских операций</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Стили для страницы складских операций */
+    .forms-container {
+        padding: 0;
+        width: 100%;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        box-shadow: 0 8px 32px rgba(100, 116, 139, 0.3);
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="warehouse-grain" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23warehouse-grain)"/></svg>');
+        opacity: 0.3;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .page-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Стили для аккордеона */
+    .accordion-container {
+        margin-bottom: 2rem;
+    }
+
+    .accordion-item {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .accordion-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .accordion-header:hover {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    }
+
+    .accordion-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .accordion-title i {
+        font-size: 1.5rem;
+    }
+
+    .accordion-title h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .accordion-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .accordion-icon i {
+        font-size: 1.2rem;
+    }
+
+    .accordion-item.active .accordion-icon {
+        transform: rotate(180deg);
+    }
+
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .accordion-item.active .accordion-content {
+        max-height: 2000px;
+    }
+
+    .form-card {
+        padding: 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .card-header i {
+        font-size: 1.5rem;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-label i {
+        color: var(--primary);
+        width: 16px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background: var(--surface);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-hint {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+        transform: translateY(-2px);
+    }
+
+    /* Стили для таблицы складских операций */
+    .washes-table-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, var(--secondary), #64748b);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .table-stats {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .washes-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .washes-table thead th {
+        background: var(--background);
+        color: var(--text-primary);
+        padding: 1rem 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .washes-table tbody td {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    .washes-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .washes-table tbody tr:hover {
+        background: rgba(37, 99, 235, 0.02);
+    }
+
+    .washes-table tbody tr:nth-child(even) {
+        background: var(--background);
+    }
+
+    .no-washes {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .no-washes i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .no-washes p {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 768px) {
+        .forms-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            flex: none;
+        }
+
+        .table-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .table-stats {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .washes-table {
+            font-size: 0.8rem;
+        }
+
+        .washes-table thead th,
+        .washes-table tbody td {
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header {
+            padding: 0.75rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+
+        .accordion-header {
+            padding: 1rem;
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+    }
+
+    /* Анимации */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px); }
+        75% { transform: translateX(2px); }
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+
+    .accordion-content {
+        animation: fadeIn 0.3s ease;
+    }
+
+    .stock-item-card {
+        animation: slideInUp 0.6s ease-out;
+    }
+
+    .stock-item-card:nth-child(odd) {
+        animation-delay: 0.1s;
+    }
+
+    .stock-item-card:nth-child(even) {
+        animation-delay: 0.2s;
+    }
+</style>
+
+<script>
+    // Функция переключения аккордеона (определена глобально)
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.accordion-icon i');
+
+        // Проверяем текущее состояние
+        const isActive = item.classList.contains('active');
+
+        if (isActive) {
+            // Сворачиваем
+            item.classList.remove('active');
+            content.style.maxHeight = '0px';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            // Разворачиваем - сначала устанавливаем высоту для анимации
+            content.style.maxHeight = content.scrollHeight + 'px';
+            item.classList.add('active');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+
+            // После завершения анимации убираем фиксированную высоту
+            setTimeout(() => {
+                if (item.classList.contains('active')) {
+                    content.style.maxHeight = 'none';
+                }
+            }, 300);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обновляем заголовок страницы
+        const pageTitle = document.getElementById('pageTitle');
+        const contentTitle = document.getElementById('contentTitle');
+        const contentIcon = document.getElementById('contentIcon');
+
+        if (pageTitle) pageTitle.textContent = 'Склад';
+        if (contentTitle) contentTitle.textContent = 'Складские операции';
+        if (contentIcon) contentIcon.className = 'fas fa-boxes';
+
+        // Устанавливаем правильную высоту аккордеона после загрузки
+        setTimeout(function() {
+            const accordionItem = document.querySelector('.accordion-item.active');
+            if (accordionItem) {
+                const content = accordionItem.querySelector('.accordion-content');
+                if (content) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            }
+        }, 100);
+
+        // Обработка формы
+        const stockForm = document.getElementById('stockForm');
+
+        if (stockForm) {
+            stockForm.addEventListener('submit', function(event) {
+                const submitter = event.submitter;
+                const action = submitter.name;
+
+                // Клиентская валидация количества для preview_stock
+                if (action === 'preview_stock') {
+                    const stockSelect = document.querySelector('select[name="stock"]');
+                    const quantityInput = document.querySelector('input[name="quantity"]');
+
+                    if (stockSelect && quantityInput) {
+                        const selectedStockId = stockSelect.value;
+                        const requestedQuantity = parseInt(quantityInput.value) || 0;
+
+                        // Находим доступное количество для выбранного товара
+                        const stockCard = document.querySelector(`[data-stock-id="${selectedStockId}"]`);
+                        if (stockCard) {
+                            const availableText = stockCard.querySelector('.stock-quantity').textContent;
+                            const availableQuantity = parseInt(availableText.replace(' шт.', '')) || 0;
+
+                            if (requestedQuantity > availableQuantity) {
+                                event.preventDefault();
+                                // Показываем ошибку через Django messages (имитируем)
+                                showErrorMessage(`Недостаточно товара на складе. Доступно: ${availableQuantity} шт.`);
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                // Добавляем скрытое поле с действием
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'form_action';
+                actionInput.value = action;
+                stockForm.appendChild(actionInput);
+
+                // Показываем индикатор загрузки
+                const originalText = submitter.innerHTML;
+                submitter.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+                submitter.disabled = true;
+
+                // Восстанавливаем кнопку через 3 секунды (на случай ошибки)
+                setTimeout(() => {
+                    submitter.innerHTML = originalText;
+                    submitter.disabled = false;
+                }, 3000);
+            });
+        }
+
+        // Функция для показа сообщения об ошибке
+        function showErrorMessage(message) {
+            const messagesContainer = document.querySelector('.messages-container') || createMessagesContainer();
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-error alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                ${message}
+                <button type="button" class="btn-close" onclick="dismissAlert(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            messagesContainer.appendChild(alertDiv);
+
+            // Автоматически скрываем через 3 секунды
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    dismissAlert(alertDiv.querySelector('.btn-close'));
+                }
+            }, 3000);
+        }
+
+        // Функция создания контейнера сообщений, если его нет
+        function createMessagesContainer() {
+            const container = document.createElement('div');
+            container.className = 'messages-container';
+
+            // Вставляем после заголовка
+            const pageHeader = document.querySelector('.page-header');
+            if (pageHeader) {
+                pageHeader.parentNode.insertBefore(container, pageHeader.nextSibling);
+            }
+
+            return container;
+        }
+
+        // Автоматическое скрытие сообщений через 3 секунды
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                dismissAlert(alert.querySelector('.btn-close'));
+            }, 3000);
+        });
+
+        // Функция для скрытия сообщения
+        window.dismissAlert = function(button) {
+            const alert = button.closest('.alert');
+            if (alert) {
+                alert.style.transition = 'all 0.3s ease';
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 300);
+            }
+        };
+
+        // Интерактивность карточек товаров
+        const stockCards = document.querySelectorAll('.stock-item-card');
+        stockCards.forEach((card, index) => {
+            // Добавляем задержку анимации
+            card.style.animationDelay = `${index * 0.1}s`;
+
+            // Добавляем hover эффекты
+            card.addEventListener('mouseenter', function() {
+                this.style.animationPlayState = 'paused';
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.style.animationPlayState = 'running';
+            });
+
+            // Добавляем клик эффект
+            card.addEventListener('click', function() {
+                // Создаем ripple эффект
+                const ripple = document.createElement('div');
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+                ripple.style.transform = 'scale(0)';
+                ripple.style.animation = 'ripple 0.6s linear';
+                ripple.style.left = '50%';
+                ripple.style.top = '50%';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.marginLeft = '-10px';
+                ripple.style.marginTop = '-10px';
+                ripple.style.pointerEvents = 'none';
+
+                this.appendChild(ripple);
+
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Анимация появления карточек при скролле
+        function handleScroll() {
+            const cards = document.querySelectorAll('.stock-item-card');
+            const scrollTop = window.pageYOffset;
+
+            cards.forEach((card, index) => {
+                const cardTop = card.offsetTop;
+                if (scrollTop + window.innerHeight > cardTop + 100) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }
+            });
+        }
+
+        window.addEventListener('scroll', handleScroll);
+        handleScroll(); // Вызываем сразу для видимых карточек
+
+        // Добавляем эффект плавания для карточек
+        stockCards.forEach((card, index) => {
+            card.style.animation += `, float ${3 + index * 0.5}s ease-in-out infinite`;
+        });
+    });
+</script>
+
+<style>
+    /* Стили для блока остатков товаров */
+    .stock-balance-container {
+        padding: 1.5rem;
+    }
+
+    .stock-balance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .stock-item-card {
+        background: linear-gradient(145deg, var(--surface), rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: slideInUp 0.6s ease-out;
+        backdrop-filter: blur(10px);
+    }
+
+    .stock-item-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--success), var(--warning));
+        border-radius: 16px 16px 0 0;
+    }
+
+    .stock-item-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-light);
+    }
+
+    .stock-item-card:hover::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+        animation: pulse 2s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .stock-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .stock-item-header h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        background: linear-gradient(135deg, var(--text-primary), var(--primary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+    }
+
+    .stock-item-header h4::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 30px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+        border-radius: 2px;
+    }
+
+    .stock-quantity {
+        font-weight: 700;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stock-quantity::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    .stock-quantity:not(.low-stock) {
+        background: linear-gradient(135deg, var(--success-light), var(--success));
+        color: white;
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+    }
+
+    .stock-quantity.low-stock {
+        background: linear-gradient(135deg, var(--danger-light), var(--danger));
+        color: white;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        animation: pulse 2s infinite, shake 0.5s ease-in-out;
+    }
+
+    .stock-quantity::after {
+        content: '📦';
+        font-size: 0.7rem;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .stock-item-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .stock-price {
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .stock-total {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .no-stock {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+    }
+
+    .no-stock i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    /* Стили для сообщений */
+    .messages-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .alert {
+        padding: 1.25rem 1.5rem;
+        border-radius: var(--radius);
+        border: 2px solid;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 600;
+        font-size: 1rem;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .alert-error {
+        background: linear-gradient(135deg, var(--danger-light), #fee2e2);
+        color: var(--danger);
+        border-color: var(--danger);
+        border-left: 4px solid var(--danger);
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, var(--success-light), #dcfce7);
+        color: var(--success);
+        border-color: var(--success);
+        border-left: 4px solid var(--success);
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, var(--info-light), #dbeafe);
+        color: var(--info);
+        border-color: var(--info);
+        border-left: 4px solid var(--info);
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, var(--warning-light), #fef3c7);
+        color: var(--warning);
+        border-color: var(--warning);
+        border-left: 4px solid var(--warning);
+    }
+
+    .alert i {
+        font-size: 1.25rem;
+        margin-right: 0.75rem;
+    }
+
+    .alert-error i {
+        color: var(--danger);
+    }
+
+    .alert-success i {
+        color: var(--success);
+    }
+
+    .alert-info i {
+        color: var(--info);
+    }
+
+    .alert-warning i {
+        color: var(--warning);
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+
+    /* Ripple эффект для карточек */
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+
+    .stock-item-card {
+        position: relative;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

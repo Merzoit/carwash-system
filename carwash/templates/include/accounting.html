@@ -1,0 +1,223 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/accounting.css' %}">
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card" style="background-color: #ebebeb">
+        <div class="card-header">
+          Список мойщиков с балансом более 10р.
+        </div>
+        <div class="card-body">
+          <table class="table table-success">
+            <thead>
+              <tr>
+                <th scope="col">Мойщик</th>
+                <th scope="col">Баланс</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for obj in washman %}
+              {% if obj.balance > 10 %}
+              <tr>
+                <td>{{ obj.name }}</td>
+                <td>{{ obj.balance }}</td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card mb-3" style="background-color: #ebebeb">
+        <div class="card-header">
+          Выплата мойщику
+        </div>
+        <div class="card-body">
+          <form id="update_washman_data" method="post" action="{% url 'add_cons' %}">
+            {% csrf_token %}
+            <div class="form-group">
+              <label for="washman">Мойщик</label>
+              {{ c_form.washman }}
+            </div>
+            <div class="form-group">
+              <label for="money">Сумма</label>
+              {{ c_form.money }}
+            </div>
+            <button type="submit" class="btn btn-dark filter-form-button btn-block">
+              Добавить выплату
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card mb-3" style="background-color: #ebebeb">
+        <div class="card-header">
+          Бытовой расход
+        </div>
+        <div class="card-body">
+          <form id="update_other_data" method="post" action="{% url 'add_other_cons' %}">
+            {% csrf_token %}
+            <div class="form-group">
+              <label for="description">Описание</label>
+              {{ oc_form.description }}
+            </div>
+            <div class="form-group">
+              <label for="money">Сумма</label>
+              {{ oc_form.money }}
+            </div>
+            <button type="submit" class="btn btn-dark filter-form-button btn-block">
+              Добавить расход
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card" style="background-color: #ebebeb">
+        <div class="card-header">
+          Выплаты мойщикам
+        </div>
+        <div class="card-body">
+          <table class="table table-success">
+            <thead>
+              <tr>
+                <th scope="col">Мойщик</th>
+                <th scope="col">Выплата</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for obj in consumption %}
+              <tr>
+                <td>{{ obj.washman }}</td>
+                <td>{{ obj.money }}</td>
+                <td>
+				    <button class="help-button" data-bs-toggle="modal" data-bs-target="#modalcons-{{ obj.id }}">
+				      <img src="{% static 'images/help.svg' %}" alt="Помощь" width="20" height="20">
+				    </button>
+			    </td>
+              </tr>
+              
+					<!-- Модальное окно -->
+					  <div class="modal fade" id="modalcons-{{ obj.id }}" style="text-align: center;" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+					    <div class="modal-dialog">
+					      <div class="modal-content">
+					        <div class="modal-header">
+					          <h1 class="modal-title fs-5">Отчёт зарплатной выплаты №{{ obj.id }}</h1>
+					          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+					        </div>
+							<div class="modal-body">
+							  <div class="row mb-3">
+							    <div class="col">
+							    <strong>Информация:</strong>
+								<ul class="list-group">
+								  <li class="list-group-item list-group-item-info"><strong>Мойщик:</strong> {{ obj.washman }}</li>
+								  <li class="list-group-item list-group-item-info"><strong>Сумма:</strong> {{ obj.money }}</li>
+								</ul>
+							    </div>
+							  </div>
+							
+							  <div class="row mb-3">
+							    <div class="col">
+							      <form id="req-cons-desc" method="post" action="{% url 'add_req_cons' %}" class="box">
+									{% csrf_token %}
+							      	<input name="rw-id" type="hidden" value="{{ obj.id }}"></input>
+							    	<strong>Описание проблемы и ее причин:</strong><br>
+							    	{{ req_cons_form.description }}
+							    	<div class="modal-footer">
+					        			<button type="submit" class="btn btn-dark" name="add_cons">Отправить</button>
+					        		</div>
+							      </form>
+							    </div>
+							  </div>
+					      </div>
+					    </div>
+					  </div>
+					  
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card" style="background-color: #ebebeb">
+        <div class="card-header">
+          Расходы на быт
+        </div>
+        <div class="card-body">
+          <table class="table table-success">
+            <thead>
+              <tr>
+                <th scope="col">Описание</th>
+                <th scope="col">Выплата</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for obj in other_consumption %}
+              <tr>
+                <td>{{ obj.description }}</td>
+                <td>{{ obj.money }}</td>
+                <td>
+			      <button class="help-button" data-bs-toggle="modal" data-bs-target="#modalothercons-{{ obj.id }}">
+			        <img src="{% static 'images/help.svg' %}" alt="Помощь" width="20" height="20">
+			      </button>
+			    </td>
+              </tr>
+              
+					<!-- Модальное окно -->
+					  <div class="modal fade" id="modalothercons-{{ obj.id }}" style="text-align: center;" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+					    <div class="modal-dialog">
+					      <div class="modal-content">
+					        <div class="modal-header">
+					          <h1 class="modal-title fs-5">Отчёт бытового расхода №{{ obj.id }}</h1>
+					          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+					        </div>
+							<div class="modal-body">
+							  <div class="row mb-3">
+							    <div class="col">
+							    <strong>Информация:</strong>
+								<ul class="list-group">
+								  <li class="list-group-item list-group-item-info"><strong>Описание:</strong> {{ obj.description }}</li>
+								  <li class="list-group-item list-group-item-info"><strong>Сумма:</strong> {{ obj.money }}</li>
+								</ul>
+							    </div>
+							  </div>
+							
+							  <div class="row mb-3">
+							    <div class="col">
+							      <form id="req-other-cons-desc" method="post" action="{% url 'add_req_other_cons' %}" class="box">
+									{% csrf_token %}
+							      	<input name="rw-id" type="hidden" value="{{ obj.id }}"></input>
+							    	<strong>Описание проблемы и ее причин:</strong><br>
+							    	{{ req_other_cons_form.description }}
+							    	<div class="modal-footer">
+					        			<button type="submit" class="btn btn-dark" name="add_other_cons">Отправить</button>
+					        		</div>
+							      </form>
+							    </div>
+							  </div>
+					      </div>
+					    </div>
+					  </div>
+					  
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
