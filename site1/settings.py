@@ -85,24 +85,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Создание суперпользователя при первом запуске
-from django.contrib.auth import get_user_model
-
-# Создаем суперпользователя если его нет
-try:
-    User = get_user_model()
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser(
-            username='admin',
-            email='admin@carwash.local',
-            password='admin123',
-            first_name='Администратор',
-            last_name='Системы'
-        )
-        print("✅ Суперпользователь создан: admin / admin123")
-except Exception as e:
-    print(f"⚠️  Не удалось создать суперпользователя: {e}")
-
 # Debug logging для Railway
 LOGGING = {
     'version': 1,

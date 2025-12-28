@@ -32,7 +32,8 @@ ENV SECRET_KEY=django-insecure-default-key-change-in-production
 
 # Выполняем миграции и собираем статические файлы
 RUN python manage.py collectstatic --noinput --clear && \
-    python manage.py migrate --run-syncdb
+    python manage.py migrate --run-syncdb && \
+    python manage.py create_superuser
 
 # Создаем непривилегированного пользователя
 RUN useradd --create-home --shell /bin/bash app && \
