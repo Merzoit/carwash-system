@@ -41,9 +41,9 @@ USER app
 
 # Healthcheck - проверка что Gunicorn работает
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD ["sh", "-c", "pgrep -f gunicorn > /dev/null 2>&1 && curl -f http://localhost:${PORT:-8080}/health/ > /dev/null 2>&1 || exit 1"]
+    CMD ["sh", "-c", "pgrep -f gunicorn > /dev/null 2>&1 && curl -f http://localhost:$PORT/health/ > /dev/null 2>&1 || exit 1"]
 
 # Команда запуска с gunicorn для продакшена
-CMD sh -c "echo 'Starting Django application...' && \
+CMD sh -c "echo 'Starting Django application on PORT: $PORT...' && \
            trap 'echo \"Shutting down...\"' TERM INT && \
-           gunicorn --log-level info --access-logfile - --error-logfile - --bind 0.0.0.0:${PORT:-8080} site1.wsgi:application"
+           gunicorn --log-level info --access-logfile - --error-logfile - --bind 0.0.0.0:$PORT site1.wsgi:application"
