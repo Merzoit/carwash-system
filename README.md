@@ -149,7 +149,14 @@ python manage.py collectstatic --noinput
 ### Запуск в продакшене
 Для продакшена используется Gunicorn WSGI сервер:
 ```bash
-gunicorn site1.wsgi:application --bind 0.0.0.0:8000
+gunicorn site1.wsgi:application --bind 0.0.0.0:$PORT
+```
+
+### Healthcheck
+Приложение предоставляет healthcheck endpoint:
+```bash
+curl https://your-domain.up.railway.app/health/
+# {"status": "ok"}
 ```
 
 ### Настройка PostgreSQL в Railway
