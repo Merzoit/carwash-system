@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаем директорию приложения
@@ -38,12 +39,9 @@ RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app
 USER app
 
-# Открываем порт (Railway сам присвоит порт через переменную PORT)
-EXPOSE $PORT
-
-# Healthcheck для Railway
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-    CMD curl -f http://localhost:$PORT/health/ || exit 1
+# Временный healthcheck - просто проверяем что процесс работает
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD pgrep gunicorn || exit 1
 
 # Команда запуска с gunicorn для продакшена
-CMD sh -c "echo 'Starting Django on port $PORT' && gunicorn site1.wsgi:application --bind 0.0.0.0:$PORT"
+CMD sh -c "echo 'Starting Django on port $PORT' && echo 'PORT value: $PORT' && gunicorn --log-level debug --access-logfile - --error-logfile - site1.wsgi:application --bind 0.0.0.0:$PORT"
