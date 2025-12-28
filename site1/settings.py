@@ -112,6 +112,7 @@ WSGI_APPLICATION = 'site1.wsgi.application'
 # Настройки базы данных из переменной окружения
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+# Конфигурация базы данных
 if DATABASE_URL:
     # Если DATABASE_URL установлена (Railway предоставляет PostgreSQL)
     import dj_database_url
@@ -126,19 +127,19 @@ if DATABASE_URL:
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
+                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
             }
         }
         logger.info("Fallback to SQLite database")
-    else:
-        # Для локальной разработки
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
+else:
+    # Для локальной разработки или если DATABASE_URL не установлена
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
-        logger.info("Using SQLite database for development")
+    }
+    logger.info("Using SQLite database for development")
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
