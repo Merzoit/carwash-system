@@ -140,12 +140,6 @@ if DATABASE_URL:
         }
         logger.info("Using SQLite database for development")
 
-# Debug logging for Railway
-logger.info(f"Starting Django application on port {PORT}")
-logger.info(f"DEBUG: {DEBUG}")
-logger.info(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-logger.info(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
-
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
@@ -201,6 +195,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Railway specific settings
 # Port for Railway deployment
 PORT = int(os.getenv('PORT', 8000))
+
+# Debug logging for Railway
+logger.info(f"Starting Django application on port {PORT}")
+logger.info(f"DEBUG: {DEBUG}")
+logger.info(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+logger.info(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not set')}")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
