@@ -132,7 +132,7 @@ WSGI_APPLICATION = 'site1.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 # Настройки базы данных из переменной окружения
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:MmuRktkaoQChhBECucfAhpIXqUaYFMxL@crossover.proxy.rlwy.net:42771/railway')
 
 # Конфигурация базы данных
 if DATABASE_URL:
