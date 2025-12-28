@@ -39,16 +39,11 @@ RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app
 USER app
 
-# Временно отключен healthcheck для диагностики
-# HEALTHCHECK --interval=30s --timeout=10s --start-period=25s --retries=3 \
-#     CMD ["sh", "-c", "pgrep -f gunicorn > /dev/null || exit 1"]
+# Healthcheck - проверка что Gunicorn работает
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD ["sh", "-c", "pgrep -f gunicorn > /dev/null 2>&1 && curl -f http://localhost:${PORT:-8080}/health/ > /dev/null 2>&1 || exit 1"]
 
 # Команда запуска с gunicorn для продакшена
-CMD sh -c "echo '=== Starting Django Application ===' && \
-           echo 'PORT environment variable: $PORT' && \
-           echo 'Current working directory: $(pwd)' && \
-           echo 'Testing Django import...' && \
-           python -c 'import django; django.setup(); print(\"Django import successful\")' && \
-           echo 'Starting Gunicorn on port 8080...' && \
-           trap 'echo \"Received signal, shutting down...\"' TERM INT && \
-           gunicorn --log-level debug --access-logfile - --error-logfile - --bind 0.0.0.0:${PORT:-8080} site1.wsgi:application"
+CMD sh -c "echo 'Starting Django application...' && \
+           trap 'echo \"Shutting down...\"' TERM INT && \
+           gunicorn --log-level info --access-logfile - --error-logfile - --bind 0.0.0.0:${PORT:-8080} site1.wsgi:application"
