@@ -131,14 +131,14 @@ if DATABASE_URL:
         }
         logger.info("Fallback to SQLite database")
     else:
-    # Для локальной разработки
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        # Для локальной разработки
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
         }
-    }
-    logger.info("Using SQLite database for development")
+        logger.info("Using SQLite database for development")
 
 # Debug logging for Railway
 logger.info(f"Starting Django application on port {PORT}")
