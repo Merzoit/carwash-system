@@ -4,6 +4,8 @@ FROM python:3.11-slim
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаем директорию приложения
@@ -19,11 +21,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Создаем директории для статических файлов и медиа
-RUN mkdir -p staticfiles media
+RUN mkdir -p staticfiles media logs
+
+# Устанавливаем переменные окружения по умолчанию
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=site1.settings
+ENV DEBUG=False
+ENV SECRET_KEY=django-insecure-default-key-change-in-production
 
 # Выполняем миграции и собираем статические файлы
-RUN python manage.py collectstatic --noinput && \
-    python manage.py migrate
+RUN python manage.py collectstatic --noinput --clear && \
+    python manage.py migrate --run-syncdb
 
 # Создаем непривилегированного пользователя
 RUN useradd --create-home --shell /bin/bash app && \
