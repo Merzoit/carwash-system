@@ -143,7 +143,13 @@ ALLOWED_HOSTS=your-domain.com,*.railway.app,railway.app
 
 ### Статические файлы
 ```bash
-python manage.py collectstatic
+python manage.py collectstatic --noinput
+```
+
+### Запуск в продакшене
+Для продакшена используется Gunicorn WSGI сервер:
+```bash
+gunicorn site1.wsgi:application --bind 0.0.0.0:8000
 ```
 
 ### Настройка PostgreSQL в Railway
