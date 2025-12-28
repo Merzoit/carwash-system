@@ -39,11 +39,11 @@ RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app
 USER app
 
-# Healthcheck - проверка что Gunicorn работает
+# Healthcheck - проверка что Gunicorn работает на порту 8000
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD ["sh", "-c", "pgrep -f gunicorn > /dev/null 2>&1 && curl -f http://localhost:$PORT/health/ > /dev/null 2>&1 || exit 1"]
+    CMD ["sh", "-c", "pgrep -f gunicorn > /dev/null 2>&1 && curl -f http://localhost:8000/health/ > /dev/null 2>&1 || exit 1"]
 
-# Команда запуска с gunicorn для продакшена
-CMD sh -c "echo 'Starting Django application on PORT: $PORT...' && \
+# Команда запуска с gunicorn для продакшена на порту 8000 (как указано в Railway)
+CMD sh -c "echo 'Starting Django application on port 8000...' && \
            trap 'echo \"Shutting down...\"' TERM INT && \
-           gunicorn --log-level info --access-logfile - --error-logfile - --bind 0.0.0.0:$PORT site1.wsgi:application"
+           gunicorn --log-level info --access-logfile - --error-logfile - --bind 0.0.0.0:8000 site1.wsgi:application"
