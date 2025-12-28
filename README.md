@@ -137,14 +137,31 @@ carwash-system/
 ```env
 DEBUG=False
 SECRET_KEY=your-secret-key-here
-DATABASE_URL=sqlite:///db.sqlite3
-ALLOWED_HOSTS=your-domain.com
+DATABASE_URL=postgresql://username:password@host:port/database_name
+ALLOWED_HOSTS=your-domain.com,*.railway.app,railway.app
 ```
 
 ### Статические файлы
 ```bash
 python manage.py collectstatic
 ```
+
+### Настройка PostgreSQL в Railway
+
+1. **Создайте PostgreSQL базу данных** в Railway Dashboard
+2. **Получите параметры подключения**:
+   - Host: `crossover.proxy.rlwy.net`
+   - Port: `42771`
+   - Username: (из настроек базы данных)
+   - Password: (из настроек базы данных)
+   - Database: `postgres` (или ваше имя БД)
+
+3. **Добавьте переменную окружения** в Railway:
+   ```
+   DATABASE_URL=postgresql://username:password@crossover.proxy.rlwy.net:42771/postgres
+   ```
+
+4. **Railway автоматически пересоберет** приложение с PostgreSQL
 
 ### Настройки базы данных
 Для продакшена рекомендуется PostgreSQL:
